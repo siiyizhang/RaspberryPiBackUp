@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>Eureka!</title>
+        <!-- Required meta tags -->
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
+
+        <!-- Bootstrap CSS v5.2.1 -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+            crossorigin="anonymous"
+        />
+        <!-- Bootstrap Icons -->
+        <link 
+        rel="stylesheet" 
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+        <link href = "css/styles.css" rel ="stylesheet">
+    </head>
+
+    <body>
+        <!-- Navigation Bar -->
+        <nav id="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+            <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="/figures/brand/White logo - no background.png" alt="Eureka Logo" class = "logo">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto"> <!--align thge navigation-->
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="#hero">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#about">About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#services">Services</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#portfolio">Portfolio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#testimonials">testimonials</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#contact">Contact</a>
+                </li>
+                </ul>
+            </div>
+            </div>
+        </nav>
+  
+    <script>
+        const navbar = document.getElementById('navbar');
+        var flag = true;        // Show the navbar when the page loads
+        window.addEventListener('load', function() {
+            navbar.style.opacity = '1';
+
+            // After 3 seconds, hide the navbar automatically
+            setTimeout(function() {
+            navbar.style.opacity = '0';
+            flag = false;
+            }, 10000);  // 3 seconds
+        });
+        // Show the navbar when hovering over the top of the page
+        document.body.addEventListener('mousemove', function (e) {
+            if (e.clientY < 100) {  // When the mouse is near the top 100px of the page
+            navbar.style.opacity = '1';
+            } else {
+                if(flag = false){
+                    navbar.style.opacity = '0';
+                }
+            
+            }
+        });
+        
+        // Smooth transition effect
+        navbar.style.transition = 'opacity 0.5s ease-in-out';
+        </script>
+
+
+
+<div id ="main-content">
+
+        <!-- Hero Section -->
+        <section id="hero" class="d-flex align-items-center justify-content-center bg-primary text-white" 
+        style="height: 100vh; background-image: url('/figures/image/20240910_13h08m33s_grim/20240910_13h08m33s_grim.png'); background-size: cover; background-position: center;">
+        <div class="container text-center">
+        <h1 class="display-4">Welcome to Eureka</h1>
+        <p class="lead">We build portable microscope kits that helps you discover nature.</p>
+        <a href="\stream.html" class="btn btn-lg btn-light mt-3">Go live</a>
+        </div>
+        </section>
+
+
+        <!-- About Section -->
+        <section id="about" class="py-5">
+            <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 order-md-2">
+                <img src="/figures/image/siyi intro.jpg" class="img-fluid rounded" alt="About Us">
+                </div>
+                <div class="col-md-6 order-md-1">
+                <h2>About Us</h2>
+                <p>
+                    We are environmental scientist and physitics who love to discover nature from ETH zurich.
+                        We create smart microscope that just amazed.
+                </p>
+                <a href="#product" class="btn btn-primary">Learn More</a>
+                </div>
+            </div>
+            </div>
+        </section>
+  
+
+        <!-- Services Section -->
+        <section id="product" class="py-5 bg-light">
+            <div class="container">
+            <h2 class="text-center mb-4">Our products</h2>
+            <div class="row">
+                <!-- Service 1 -->
+                <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                    <i class="bi bi-gear-wide-connected fs-1 mb-3"></i>
+                    <h5 class="card-title">Eureka E1</h5>
+                    <p class="card-text">
+                        Simple and fun. With mechanical hands on operation and discovering kits. Best for children.
+                    </p>
+                    </div>
+                </div>
+                </div>
+                <!-- Service 2 -->
+                <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                    <i class="bi bi-lightning fs-1 mb-3"></i>
+                    <h5 class="card-title">Eureka S1</h5>
+                    <p class="card-text">
+                        Research-quality and ai assisted. It helps you understand and analyze what you see. 
+                    </p>
+                    </div>
+                </div>
+                </div>
+                <!-- Service 3 -->
+                <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                    <i class="bi bi-cloud-download fs-1 mb-3"></i>
+                    <h5 class="card-title">Service Three</h5>
+                    <p class="card-text">
+                        Description of service three. Brief and concise information about what you offer.
+                    </p>
+                    </div>
+                </div>
+                </div>
+            </div>
+            </div>
+        </section>
+  
+
+        <!-- Portfolio Section -->
+<section id="portfolio" class="py-5">
+    <div class="container">
+      <h2 class="text-center mb-4">Our Portfolio</h2>
+      <div class="row g-4">
+        <!-- Portfolio Item 1 -->
+        <div class="col-md-4">
+          <div class="card">
+            <img src="/figures/image/siyi intro.jpg" class="card-img-top" alt="Project One">
+            <div class="card-body">
+              <h5 class="card-title">Exhibition with national marinetime museum of China</h5>
+              <p class="card-text">We help the visitor collect and see the plankton in the sea with our microscope.</p>
+            </div>
+            <div class="card-footer text-center">
+              <a href="https://example.com/project-one" class="btn btn-primary btn-sm" target="_blank">get inspiration</a>
+            </div>
+          </div>
+        </div>
+        <!-- Portfolio Item 2 -->
+        <div class="col-md-4">
+          <div class="card">
+            <img src="/figures/image/Yu intro.jpg" class="card-img-top" alt="Project Two">
+            <div class="card-body">
+              <h5 class="card-title">Microworld art</h5>
+              <p class="card-text">We held STEAM classes for children to use microscope and create artpieces of what they saw.</p>
+            </div>
+            <div class="card-footer text-center">
+              <a href="https://example.com/project-two" class="btn btn-primary btn-sm" target="_blank">get joyness</a>
+            </div>
+          </div>
+        </div>
+        <!-- Portfolio Item 3 -->
+        <div class="col-md-4">
+          <div class="card">
+            <img src="/figures/image/eureka phone.jpg" class="card-img-top" alt="Project Three">
+            <div class="card-body">
+              <h5 class="card-title">Hiking with microscope</h5>
+              <p class="card-text">See what our microscope discover at alpine.</p>
+            </div>
+            <div class="card-footer text-center">
+              <a href="https://example.com/project-three" class="btn btn-primary btn-sm" target="_blank">View Project</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add more portfolio items as needed -->
+
+        <!-- Portfolio Item with Modal Trigger -->
+        <div class="col-md-4">
+            <div class="card">
+            <img src="images/portfolio1.jpg" class="card-img-top" alt="Project One" data-bs-toggle="modal" data-bs-target="#portfolioModal1" style="cursor: pointer;">
+            <div class="card-body">
+                <h5 class="card-title">Project One</h5>
+                <p class="card-text">Short description of Project One.</p>
+            </div>
+            <div class="card-footer text-center">
+                <a href="#" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#portfolioModal1">View Project</a>
+            </div>
+            </div>
+        </div>
+        
+        <!-- Portfolio Modal 1 -->
+        <div class="modal fade" id="portfolioModal1" tabindex="-1" aria-labelledby="portfolioModalLabel1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                <h5 class="modal-title" id="portfolioModalLabel1">Project One</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                <img src="images/portfolio1.jpg" class="img-fluid mb-3" alt="Project One">
+                <p>Detailed description of Project One. Include any relevant information, technologies used, and outcomes.</p>
+                </div>
+                <div class="modal-footer">
+                <a href="https://example.com/project-one" class="btn btn-primary" target="_blank">Visit Project</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-5 bg-light">
+        <div class="container">
+        <h2 class="text-center mb-4">What children and parents Say</h2>
+        <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+            <!-- Testimonial 1 -->
+            <div class="carousel-item active">
+                <div class="row justify-content-center">
+                <div class="col-md-8 text-center">
+                    <img src="images/client1.jpg" class="rounded-circle mb-3" alt="Client One" width="100" height="100">
+                    <h5>Shunshun</h5>
+                    <p class="text-muted">Aged 8, elementray school student in China</p>
+                    <p class="fst-italic">"I am very surprised by what I saw with this microscope"</p>
+                </div>
+                </div>
+            </div>
+            <!-- Testimonial 2 -->
+            <div class="carousel-item">
+                <div class="row justify-content-center">
+                <div class="col-md-8 text-center">
+                    <img src="images/client2.jpg" class="rounded-circle mb-3" alt="Client Two" width="100" height="100">
+                    <h5>lige's mother</h5>
+                    <p class="text-muted">salesman, Company Two</p>
+                    <p class="fst-italic">"I would love to let my children feel the connection with nature"</p>
+                </div>
+                </div>
+            </div>
+            <!-- Testimonial 3 -->
+            <div class="carousel-item">
+                <div class="row justify-content-center">
+                <div class="col-md-8 text-center">
+                    <img src="images/client3.jpg" class="rounded-circle mb-3" alt="Client Three" width="100" height="100">
+                    <h5>Wei Huang</h5>
+                    <p class="text-muted">Director, Blue box digital art cooperation</p>
+                    <p class="fst-italic">"We would like to collabrate with their microscope in our exhibiition"</p>
+                </div>
+                </div>
+            </div>
+            </div>
+            <!-- Carousel Controls -->
+            <button class="carousel-control-prev" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+        </div>
+    </section>
+  
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-5">
+        <div class="container">
+        <h2 class="text-center mb-4">get in touch</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+            <form>
+                <div class="mb-3">
+                <input type="text" class="form-control" id="name" placeholder="Your Name" required>
+                </div>
+                <div class="mb-3">
+                <label for="email" class="form-label">Email address</label>
+                <input type="email" class="form-control" id="email" placeholder="name@example.com" required>
+                </div>
+                <div class="mb-3">
+                <label for="message" class="form-label">Message</label>
+                <textarea class="form-control" id="message" rows="5" placeholder="Your Message" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Send Message</button>
+            </form>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <p><i class="bi bi-telephone"></i> +41 079-673-89-25</p>
+            <p><i class="bi bi-envelope"></i> yuliuy@ethz.ch</p>
+          </div>
+          
+        </div>
+    </section>
+</div>
+        <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+        <div class="row">
+            <!-- Footer About -->
+            <div class="col-md-4 mb-3">
+            <h5>Eureka</h5>
+            <p>
+                We brings a new insight of the world.
+            </p>
+            </div>
+            <!-- Footer Links -->
+            <div class="col-md-4 mb-3">
+            <h5>Quick Links</h5>
+            <ul class="list-unstyled">
+                <li><a href="#hero" class="text-white text-decoration-none">Home</a></li>
+                <li><a href="#about" class="text-white text-decoration-none">About</a></li>
+                <li><a href="#services" class="text-white text-decoration-none">Services</a></li>
+                <li><a href="#portfolio" class="text-white text-decoration-none">Portfolio</a></li>
+                <li><a href="#contact" class="text-white text-decoration-none">Contact</a></li>
+            </ul>
+            </div>
+            <!-- Footer Social Media -->
+            <div class="col-md-4 mb-3">
+            <h5>Follow Us</h5>
+            <a href="#" class="text-white me-2"><i class="bi bi-facebook fs-4"></i></a>
+            <a href="#" class="text-white me-2"><i class="bi bi-twitter fs-4"></i></a>
+            <a href="#" class="text-white me-2"><i class="bi bi-instagram fs-4"></i></a>
+            <a href="#" class="text-white"><i class="bi bi-linkedin fs-4"></i></a>
+            </div>
+        </div>
+        <hr class="bg-white">
+        <p class="text-center mb-0">&copy; 2024 Eureka. All rights reserved.</p>
+        </div>
+    </footer>
+  
+        <header>
+            <!-- place navbar here -->
+        </header>
+        <main></main>
+        <footer>
+            <!-- place footer here -->
+        </footer>
+        <!-- Bootstrap JavaScript Libraries -->
+        <script
+            src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+            integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+            crossorigin="anonymous"
+        ></script>
+
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+            integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+            crossorigin="anonymous"
+        ></script>
+    </body>
+</html>

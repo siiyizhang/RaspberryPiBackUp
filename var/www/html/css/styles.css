@@ -1,0 +1,253 @@
+
+/*  config the hero section */
+
+#hero {
+    position: relative;
+    height: 100vh;
+    background: url('/figures/image/20240910_13h08m33s_grim/20240910_13h08m33s_grim.png') center center/cover no-repeat;
+    display: flex;
+    background-attachment: fixed;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+#hero::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.2); /* Dark overlay to make text stand out */
+    z-index: 1;
+}
+
+#hero h1 {
+    font-size: 5rem;
+    font-family: 'Roboto', sans-serif;
+    color: #ffffff ;
+    z-index: 2;
+    animation: fadeInDown 1s ease-in-out;
+}
+
+#hero p {
+    font-size: 1.8rem;
+    color: #ffffff ;
+    z-index: 2;
+    animation: fadeInUp 1.5s ease-in-out;
+}
+#hero h1, #hero p, #hero .btn {
+    position: relative; /* Ensure content is above the overlay */
+    z-index: 2; /* Set higher than the overlay */
+}
+#hero .btn {
+    background-color: #ffffff;
+    color: #000000;
+    padding: 15px 40px;
+    font-size: 1.3rem;
+    border-radius: 50px;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+#hero .btn:hover {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+@keyframes fadeInDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/*change of navigation bar*/
+.logo {
+    height: 40px; /* Adjust this height as needed */
+    width: auto;  /* Maintains aspect ratio */
+  }
+  
+  .navbar-brand {
+    padding: 0; /* Remove extra padding if necessary */
+  }
+  
+  .navbar-brand img {
+    display: inline-block;
+    vertical-align: middle;
+  }
+.navbar {
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent navbar */
+    padding: 20px 0;
+}
+
+.navbar-nav .nav-link {
+    color: #ffffff;
+    font-size: 1.2rem;
+    margin: 0 20px;
+    transition: color 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #f0ad4e; /* Highlight color on hover */
+}
+
+/*chaneg button*/
+.btn {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border-radius: 50px; /* Rounded buttons for a modern look */
+    background-color: #ffffff;
+    color: #000000;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+
+/* about section*/
+
+#about img {
+    width: 100%;
+    border-radius: 10px; /* Smooth rounded corners */
+    box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+}
+
+#about h2 {
+    font-size: 3rem;
+    font-family: 'Roboto', sans-serif;
+    margin-bottom: 20px;
+}
+
+
+body {
+    padding-top: 80px; /* Adjust based on navbar height */
+  }
+
+  footer {
+    background-color: #222222;
+    color: #ffffff;
+    padding: 50px 0; /* More padding for a balanced look */
+}
+
+footer a {
+    color: #f0ad4e;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+footer a:hover {
+    color: #ffffff;
+}
+
+footer h5 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+}
+
+footer .bi {
+    font-size: 1.5rem;
+    margin-right: 15px;
+}
+
+footer {
+    flex-shrink: 0;
+    }
+    
+
+hr {
+    border-color: #ffffff;
+    opacity: 0.2; /* Subtle divider */
+}
+
+/* css/styles.css */
+
+html, body {
+    height: 100%;
+  }
+
+body {
+display: flex;
+flex-direction: column;
+font-family: 'Roboto', sans-serif;
+}
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+  }
+p, a, span {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 400;
+    color: #333;
+}
+#main-content {
+flex: 1;
+}
+
+
+.btn-primary:hover {
+background-color: #218838; /* Darker shade of green */
+border-color: #1e7e34;
+}
+.btn {
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  
+  /* Card Hover Effect */
+  .card {
+    border: none; /* Remove borders for a clean look */
+    border-radius: 15px; /* Smooth out card edges */
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.card img {
+    border-radius: 15px; /* Match the card border radius */
+}
+
+.card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.card-footer .btn {
+    font-size: 1rem;
+    border-radius: 50px;
+    padding: 10px 25px;
+}
+
+/* Color Variables */
+:root {--primary-color: #007bff99; --secondary-color: #6c757d; --accent-color: #28a745; --text-color: #333333; --background-color: #f8f9fa; }
+
+/* Apply Variables */ body { color: var(--text-color); background-color: var(--background-color); }
+
+.navbar { background-color: var(--primary-color) !important; }
+
+.btn-primary { background-color: var(--accent-color); border-color: var(--accent-color); }
+
+.btn-primary
+{ background-color: darken(var(--accent-color), 10%); border-color: darken(var(--accent-color), 10%); }
+
