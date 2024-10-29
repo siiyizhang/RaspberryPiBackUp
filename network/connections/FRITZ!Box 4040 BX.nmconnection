@@ -1,0 +1,23 @@
+[connection]
+id=FRITZ!Box 4040 BX
+uuid=3046cd5c-7103-418e-8905-e8fda2152ae4
+type=wifi
+interface-name=wlan0
+
+[wifi]
+mode=infrastructure
+ssid=FRITZ!Box 4040 BX
+
+[wifi-security]
+auth-alg=open
+key-mgmt=wpa-psk
+psk=99892003689497533336
+
+[ipv4]
+method=auto
+
+[ipv6]
+addr-gen-mode=default
+method=auto
+
+[proxy]

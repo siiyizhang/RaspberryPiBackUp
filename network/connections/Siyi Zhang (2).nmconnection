@@ -1,0 +1,23 @@
+[connection]
+id=Siyi Zhang (2)
+uuid=caf61487-5524-45db-bc64-ed8cd4f724fe
+type=wifi
+interface-name=wlan0
+
+[wifi]
+mode=infrastructure
+ssid=Siyi Zhang (2)
+
+[wifi-security]
+auth-alg=open
+key-mgmt=wpa-psk
+psk=zsyaoezsy
+
+[ipv4]
+method=auto
+
+[ipv6]
+addr-gen-mode=default
+method=auto
+
+[proxy]
