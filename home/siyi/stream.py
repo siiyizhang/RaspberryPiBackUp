@@ -4,25 +4,28 @@ import socketserver
 from http import server
 from threading import Condition
 from picamera2 import Picamera2
-from picamera2.encoders import JpegEncoder
+from picamera2.encoders import JpegEncoder, H264Encoder
 from picamera2.outputs import FileOutput
 import os
+import json
+from datetime import datetime
+import time
 
-# Read the custom HTML file
+# Create media directory if it doesn't exist
+MEDIA_DIR = '/var/www/html/media'
+os.makedirs(MEDIA_DIR, exist_ok=True)
+
 def read_html_file(filename):
     with open(filename, 'r') as file:
         return file.read()
 
-# Try to read the custom HTML file, fall back to a simple version if not found
+# Read both HTML files
 try:
-    PAGE = read_html_file('/var/www/html/index.html')
-except FileNotFoundError:
-    PAGE = """
-    <html>
-    <head><title>Eureka Microscope Stream</title></head>
-    <body><img src="stream.mjpg" style="width:100%;max-width:1000px;" /></body>
-    </html>
-    """
+    MAIN_PAGE = read_html_file('/var/www/html/index.html')
+    ALBUM_PAGE = read_html_file('/var/www/html/album.html')
+except FileNotFoundError as e:
+    logging.error(f"HTML file not found: {e}")
+    raise
 
 class StreamingOutput(io.BufferedIOBase):
     def __init__(self):
@@ -35,18 +38,63 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
+    recording = False
+    video_output = None
+    video_encoder = None
+
     def do_GET(self):
         if self.path == '/':
             self.send_response(301)
             self.send_header('Location', '/index.html')
             self.end_headers()
         elif self.path == '/index.html':
-            content = PAGE.encode('utf-8')
+            content = MAIN_PAGE.encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.send_header('Content-Length', len(content))
             self.end_headers()
             self.wfile.write(content)
+        elif self.path == '/album':
+            content = ALBUM_PAGE.encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.send_header('Content-Length', len(content))
+            self.end_headers()
+            self.wfile.write(content)
+        elif self.path == '/media':
+            # Return list of media files
+            media_files = []
+            for filename in os.listdir(MEDIA_DIR):
+                filepath = os.path.join(MEDIA_DIR, filename)
+                if os.path.isfile(filepath):
+                    stats = os.stat(filepath)
+                    media_files.append({
+                        'filename': filename,
+                        'date': stats.st_mtime * 1000,  # Convert to milliseconds
+                        'type': 'video' if filename.endswith('.mp4') else 'image'
+                    })
+            
+            content = json.dumps(media_files).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', len(content))
+            self.end_headers()
+            self.wfile.write(content)
+        elif self.path.startswith('/media/'):
+            filename = os.path.join(MEDIA_DIR, os.path.basename(self.path))
+            if os.path.isfile(filename):
+                with open(filename, 'rb') as f:
+                    content = f.read()
+                self.send_response(200)
+                if filename.endswith('.mp4'):
+                    self.send_header('Content-Type', 'video/mp4')
+                else:
+                    self.send_header('Content-Type', 'image/jpeg')
+                self.send_header('Content-Length', len(content))
+                self.end_headers()
+                self.wfile.write(content)
+            else:
+                self.send_error(404)
         elif self.path == '/stream.mjpg':
             self.send_response(200)
             self.send_header('Age', 0)
@@ -70,12 +118,11 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     'Removed streaming client %s: %s',
                     self.client_address, str(e))
         elif self.path.startswith('/figures/'):
-            # Serve static files from the /var/www/html directory
             try:
                 with open(os.path.join('/var/www/html', self.path[1:]), 'rb') as file:
                     content = file.read()
                 self.send_response(200)
-                self.send_header('Content-Type', 'image/png')  # Adjust content type if needed
+                self.send_header('Content-Type', 'image/png')
                 self.send_header('Content-Length', len(content))
                 self.end_headers()
                 self.wfile.write(content)
@@ -86,10 +133,57 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_error(404)
             self.end_headers()
 
+    def do_POST(self):
+        if self.path == '/capture':
+            # Take a screenshot
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'capture_{timestamp}.jpg'
+            filepath = os.path.join(MEDIA_DIR, filename)
+            
+            # Capture the current frame
+            picam2.capture_file(filepath)
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status': 'success'}).encode('utf-8'))
+            
+        elif self.path == '/record/start' and not StreamingHandler.recording:
+            # Start recording
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'video_{timestamp}.mp4'
+            filepath = os.path.join(MEDIA_DIR, filename)
+            
+            StreamingHandler.video_encoder = H264Encoder()
+            StreamingHandler.video_output = FileOutput(filepath)
+            picam2.start_recording(StreamingHandler.video_encoder, StreamingHandler.video_output)
+            StreamingHandler.recording = True
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status': 'started'}).encode('utf-8'))
+            
+        elif self.path == '/record/stop' and StreamingHandler.recording:
+            # Stop recording
+            picam2.stop_recording()
+            StreamingHandler.recording = False
+            StreamingHandler.video_encoder = None
+            StreamingHandler.video_output = None
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status': 'stopped'}).encode('utf-8'))
+        else:
+            self.send_error(404)
+            self.end_headers()
+
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
 
+# Initialize the camera
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (1920, 1080)}))
 output = StreamingOutput()

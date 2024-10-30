@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eureka Microscope Stream</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* General Styles */
+        /* Existing styles remain the same */
         html, body {
             height: 100%;
             margin: 0;
@@ -22,7 +21,6 @@
             min-height: 100vh;
         }
         
-        /* Custom styles */
         .navbar {
             background-color: #000;
             height: 60px;
@@ -38,6 +36,7 @@
             position: relative;
             flex-grow: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             background-color: #000;
@@ -56,7 +55,6 @@
             padding: 10px;
         }
         
-        /* Default styling for phone portrait mode */
         .stream-container img {
             max-width: 100%;
             max-height: 100%;
@@ -66,17 +64,15 @@
             transform: rotate(90deg);
         }
 
-        /* Landscape mode (phone landscape, tablet landscape, desktop) */
         @media (orientation: landscape) {
             .stream-container img {
                 transform: none;
             }
             .stream-container {
-                width: 90%; /* Give some margin on the sides */
+                width: 90%;
             }
         }
 
-        /* Special case for tablets and larger devices */
         @media (min-width: 768px) {
             .stream-container img {
                 transform: none;
@@ -86,28 +82,76 @@
             }
         }
         
-        .stream-section .overlay-text {
+        /* New styles for controls */
+        .controls {
             position: absolute;
-            top: 10px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
             background-color: rgba(0,0,0,0.5);
+            padding: 10px;
             border-radius: 5px;
             z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: clamp(200px, 30vw, 400px);
-            height: 40px;
         }
         
-        .overlay-text h2 {
+        .control-btn {
+            background-color: #007bff;
             color: white;
-            margin: 0;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .control-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .control-btn.recording {
+            background-color: #dc3545;
+        }
+        
+        /* Album styles */
+        .album-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .media-item {
+            background-color: #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .media-item img, .media-item video {
             width: 100%;
-            text-align: center;
-            font-size: clamp(0.8rem, 1.5vw, 1.2rem);
-            padding: 0 10px;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .media-info {
+            padding: 10px;
+            color: white;
+        }
+        
+        .media-actions {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+        }
+        
+        .download-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
         }
         
         .footer {
@@ -120,23 +164,17 @@
             justify-content: center;
             z-index: 20;
         }
-        
-        .footer p {
-            margin: 0;
-        }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg">
         <div class="container">
-            <a class="navbar-brand" href="#">
+            <a class="navbar-brand" href="/">
                 <img src="/figures/brand/White.png" alt="Eureka Logo">
             </a>
         </div>
     </nav>
 
-    <!-- Stream Section -->
     <div class="stream-section">
         <div class="stream-container">
             <img src="stream.mjpg" alt="Live Microscope Stream">
@@ -144,16 +182,65 @@
         <div class="overlay-text">
             <h2>Live Microscope Stream</h2>
         </div>
+        <div class="controls">
+            <button class="control-btn" id="screenshot">Screenshot</button>
+            <button class="control-btn" id="record">Start Recording</button>
+            <button class="control-btn" id="album">Open Album</button>
+        </div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>For Investor Pitch at SPH</p>
+            <p>Inspire Curiosity.</p>
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
+    <script>
+        let isRecording = false;
+        
+        document.getElementById('screenshot').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/capture', { method: 'POST' });
+                if (response.ok) {
+                    alert('Screenshot captured!');
+                }
+            } catch (error) {
+                console.error('Error capturing screenshot:', error);
+            }
+        });
+
+        document.getElementById('record').addEventListener('click', async () => {
+            const button = document.getElementById('record');
+            if (!isRecording) {
+                try {
+                    const response = await fetch('/record/start', { method: 'POST' });
+                    if (response.ok) {
+                        isRecording = true;
+                        button.textContent = 'Stop Recording';
+                        button.classList.add('recording');
+                    }
+                } catch (error) {
+                    console.error('Error starting recording:', error);
+                }
+            } else {
+                try {
+                    const response = await fetch('/record/stop', { method: 'POST' });
+                    if (response.ok) {
+                        isRecording = false;
+                        button.textContent = 'Start Recording';
+                        button.classList.remove('recording');
+                    }
+                } catch (error) {
+                    console.error('Error stopping recording:', error);
+                }
+            }
+        });
+
+        document.getElementById('album').addEventListener('click', () => {
+            window.location.href = '/album';
+        });
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
