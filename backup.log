@@ -100,3 +100,23 @@
 2024-10-30 12:42:45 - Backing up /etc/crontab
 2024-10-30 12:42:45 - Backing up /var/spool/cron/crontabs
 2024-10-30 12:42:46 - Backing up /var/lib/dpkg/status
+2024-10-31 13:33:30 - Backing up /etc/nginx
+2024-10-31 13:33:31 - Backing up /etc/apache2
+2024-10-31 13:33:31 - Backing up /etc/ssh
+2024-10-31 13:33:31 - Backing up /etc/network
+2024-10-31 13:33:31 - Backing up /etc/wpa_supplicant
+2024-10-31 13:33:31 - Warning: /etc/dhcpcd.conf does not exist
+2024-10-31 13:33:31 - Backing up /etc/hosts
+2024-10-31 13:33:32 - Backing up /etc/hostname
+2024-10-31 13:33:32 - Backing up /etc/fstab
+2024-10-31 13:33:32 - Backing up /home/siyi/.bashrc
+2024-10-31 13:33:32 - Backing up /home/siyi/.config
+2024-10-31 13:33:32 - Backing up /home/siyi/.local
+2024-10-31 13:33:32 - Warning: /home/siyi/projects does not exist
+2024-10-31 13:33:32 - Backing up /home/siyi/stream.py
+2024-10-31 13:33:33 - Backing up /home/siyi/system_backup.sh
+2024-10-31 13:33:33 - Backing up /var/www
+2024-10-31 13:33:33 - Backing up /etc/systemd/system
+2024-10-31 13:33:34 - Backing up /etc/crontab
+2024-10-31 13:33:34 - Backing up /var/spool/cron/crontabs
+2024-10-31 13:33:34 - Backing up /var/lib/dpkg/status
