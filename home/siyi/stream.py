@@ -153,10 +153,24 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f'video_{timestamp}.mp4'
             filepath = os.path.join(MEDIA_DIR, filename)
+                        
+            # Configure H264 encoder with proper parameters
+            StreamingHandler.video_encoder = H264Encoder(
+                bitrate=10000000,  # 10Mbps for better quality
+                repeat=False,      # Don't repeat headers
+                iperiod=30        # Keyframe interval
+            )
             
-            StreamingHandler.video_encoder = H264Encoder()
+            # Configure output with proper container format
             StreamingHandler.video_output = FileOutput(filepath)
-            picam2.start_recording(StreamingHandler.video_encoder, StreamingHandler.video_output)
+            
+            # Start recording with the configured encoder and output
+            picam2.start_recording(
+                encoder=StreamingHandler.video_encoder,
+                output=StreamingHandler.video_output,
+                quality=Quality.VERY_HIGH  # Ensure high quality encoding
+            )
+            
             StreamingHandler.recording = True
             
             self.send_response(200)
@@ -165,16 +179,29 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({'status': 'started'}).encode('utf-8'))
             
         elif self.path == '/record/stop' and StreamingHandler.recording:
-            # Stop recording
-            picam2.stop_recording()
-            StreamingHandler.recording = False
-            StreamingHandler.video_encoder = None
-            StreamingHandler.video_output = None
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'status': 'stopped'}).encode('utf-8'))
+            try:
+                # Properly stop the recording
+                picam2.stop_recording()
+                
+                # Add a small delay to ensure the file is properly closed
+                time.sleep(0.5)
+                
+                StreamingHandler.recording = False
+                StreamingHandler.video_encoder = None
+                StreamingHandler.video_output = None
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'stopped'}).encode('utf-8'))
+                
+            except Exception as e:
+                logging.error(f"Error stopping recording: {str(e)}")
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
         else:
             self.send_error(404)
             self.end_headers()
