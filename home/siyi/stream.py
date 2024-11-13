@@ -6,6 +6,7 @@ from threading import Condition
 from picamera2 import Picamera2
 from picamera2.encoders import JpegEncoder, H264Encoder
 from picamera2.outputs import FileOutput
+from picamera2.encoders import Quality  # Add this with other imports
 import os
 import json
 from datetime import datetime
@@ -161,34 +162,48 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({'status': 'success'}).encode('utf-8'))
             
         elif self.path == '/record/start' and not StreamingHandler.recording:
-            # Start recording
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f'video_{timestamp}.mp4'
-            filepath = os.path.join(MEDIA_DIR, filename)
-                        
-            # Configure H264 encoder with proper parameters
-            StreamingHandler.video_encoder = H264Encoder(
-                bitrate=10000000,  # 10Mbps for better quality
-                repeat=False,      # Don't repeat headers
-                iperiod=30        # Keyframe interval
-            )
-            
-            # Configure output with proper container format
-            StreamingHandler.video_output = FileOutput(filepath)
-            
-            # Start recording with the configured encoder and output
-            picam2.start_recording(
-                encoder=StreamingHandler.video_encoder,
-                output=StreamingHandler.video_output,
-                quality=Quality.VERY_HIGH  # Ensure high quality encoding
-            )
-            
-            StreamingHandler.recording = True
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'status': 'started'}).encode('utf-8'))
+            try:
+                # Start recording
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f'video_{timestamp}.mp4'
+                filepath = os.path.join(MEDIA_DIR, filename)
+                
+                # Configure H264 encoder with proper parameters
+                StreamingHandler.video_encoder = H264Encoder(
+                    bitrate=10000000,  # 10Mbps for better quality
+                    repeat=False,      # Don't repeat headers
+                    iperiod=30,       # Keyframe interval
+                    quality=Quality.VERY_HIGH  # Now this will work with the import
+                )
+                
+                # Configure output
+                StreamingHandler.video_output = FileOutput(filepath)
+                
+                # Stop the JPEG streaming first
+                picam2.stop_recording()
+                
+                # Start recording with the configured encoder and output
+                picam2.start_recording(
+                    encoder=StreamingHandler.video_encoder,
+                    output=StreamingHandler.video_output
+                )
+                
+                StreamingHandler.recording = True
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'started'}).encode('utf-8'))
+                
+            except Exception as e:
+                logging.error(f"Error starting recording: {str(e)}")
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'status': 'error', 
+                    'message': str(e)
+                }).encode('utf-8'))
             
         elif self.path == '/record/stop' and StreamingHandler.recording:
             try:
