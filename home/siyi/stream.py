@@ -129,6 +129,18 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             except FileNotFoundError:
                 self.send_error(404)
                 self.end_headers()
+        elif self.path.startswith('/css/'):
+            try:
+                with open(os.path.join('/var/www/html', self.path[1:]), 'rb') as file:
+                    content = file.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/css')
+                self.send_header('Content-Length', len(content))
+                self.end_headers()
+                self.wfile.write(content)
+            except FileNotFoundError:
+                self.send_error(404)
+                self.end_headers()
         else:
             self.send_error(404)
             self.end_headers()
