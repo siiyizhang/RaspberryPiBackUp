@@ -174,16 +174,21 @@ def do_POST(self):
         self.end_headers()
         self.wfile.write(json.dumps({'status': 'success'}).encode('utf-8'))
             
+
     elif self.path == '/capture_for_ai':
         try:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f'ai_capture_{timestamp}.jpg'
             filepath = os.path.join(MEDIA_DIR, filename)
             
+            print("Attempting to capture image...") # Debug log
             picam2.capture_file(filepath)
+            print(f"Image saved to {filepath}") # Debug log
             
+            print("Converting to base64...") # Debug log
             with open(filepath, 'rb') as f:
                 img_data = base64.b64encode(f.read()).decode('utf-8')
+            print("Base64 conversion complete") # Debug log
             
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -194,6 +199,8 @@ def do_POST(self):
             }).encode('utf-8'))
             
         except Exception as e:
+            print(f"Error in capture_for_ai: {str(e)}") # Debug log
+            logging.error(f"Error in capture_for_ai: {str(e)}")
             self.send_error(500)
             self.end_headers()
     
