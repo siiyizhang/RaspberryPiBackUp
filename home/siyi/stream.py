@@ -46,15 +46,20 @@ class StreamingOutput(io.BufferedIOBase):
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
     
-    def toggle_ap_mode(enable=True):
+    @classmethod
+    def toggle_ap_mode(cls, enable=True):
         """Toggle AP mode on/off using system commands"""
-        if enable:
-            subprocess.run(['sudo', 'systemctl', 'start', 'hostapd'])
-            subprocess.run(['sudo', 'systemctl', 'start', 'dnsmasq'])
-        else:
-            subprocess.run(['sudo', 'systemctl', 'stop', 'hostapd'])
-            subprocess.run(['sudo', 'systemctl', 'stop', 'dnsmasq'])
-    
+        try:
+            if enable:
+                subprocess.run(['sudo', 'systemctl', 'start', 'hostapd'], check=True)
+                subprocess.run(['sudo', 'systemctl', 'start', 'dnsmasq'], check=True)
+            else:
+                subprocess.run(['sudo', 'systemctl', 'stop', 'hostapd'], check=True)
+                subprocess.run(['sudo', 'systemctl', 'stop', 'dnsmasq'], check=True)
+        except Exception as e:
+            logging.error(f"Error toggling AP mode: {str(e)}")
+            raise
+        
     recording = False
     video_output = None
     video_encoder = None
@@ -162,170 +167,162 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_error(404)
             self.end_headers()
 
-def do_POST(self):
-    if self.path == '/capture':
-        # Your existing capture code
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f'capture_{timestamp}.jpg'
-        filepath = os.path.join(MEDIA_DIR, filename)
-        picam2.capture_file(filepath)
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps({'status': 'success'}).encode('utf-8'))
-            
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        if content_length < 0:
+            self.send_error(400, "Content-Length header missing or invalid")
+            return
+    
+        if self.path == '/capture':
+            try:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f'capture_{timestamp}.jpg'
+                filepath = os.path.join(MEDIA_DIR, filename)
+                
+                picam2.capture_file(filepath)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'success'}).encode('utf-8'))
+            except Exception as e:
+                logging.error(f"Error capturing image: {str(e)}")
+                self.send_error(500)
+                self.end_headers()
+                
+        elif self.path == '/capture_for_ai':
+            try:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f'ai_capture_{timestamp}.jpg'
+                filepath = os.path.join(MEDIA_DIR, filename)
+                
+                picam2.capture_file(filepath)
+                
+                with open(filepath, 'rb') as f:
+                    img_data = base64.b64encode(f.read()).decode('utf-8')
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'status': 'success',
+                    'image': img_data
+                }).encode('utf-8'))
+                
+            except Exception as e:
+                logging.error(f"Error in capture_for_ai: {str(e)}")
+                self.send_error(500)
+                self.end_headers()
+        
+        elif self.path == '/toggle_network':
+            try:
+                current_state = True
+                self.toggle_ap_mode(not current_state)
+                current_state = not current_state
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'status': 'success',
+                    'ap_mode': current_state
+                }).encode('utf-8'))
+                
+            except Exception as e:
+                logging.error(f"Error toggling network: {str(e)}")
+                self.send_error(500)
+                self.end_headers()
+        
+        elif self.path == '/ask_ai':
+            try:
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+                
+                API_KEY = 'your-api-key'  # Replace with your actual key
+                API_BASE_URL = 'https://litellm.sph-prod.ethz.ch/v1'
+                
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {API_KEY}'
+                }
+                
+                payload = {
+                    "model": "claude-3.5-sonnet",
+                    "messages": [{
+                        "role": "user",
+                        "content": f"I'm looking at a microscope image of {data['description']}. Please analyze what we can see in this sample and provide scientific insights."
+                    }]
+                }
+                
+                api_response = requests.post(
+                    f'{API_BASE_URL}/chat/completions',
+                    headers=headers,
+                    json=payload
+                )
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'response': api_response.json()['choices'][0]['message']['content']
+                }).encode('utf-8'))
+                
+            except Exception as e:
+                logging.error(f"Error in ask_ai: {str(e)}")
+                self.send_error(500)
+                self.end_headers()
+    
+        elif self.path == '/record/start' and not StreamingHandler.recording:
+            try:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f'video_{timestamp}.mp4'
+                filepath = os.path.join(MEDIA_DIR, filename)
+                
+                StreamingHandler.video_encoder = H264Encoder(
+                    bitrate=10000000,
+                    repeat=False,
+                    iperiod=30,
+                    quality=Quality.VERY_HIGH
+                )
+                
+                StreamingHandler.video_output = FileOutput(filepath)
+                picam2.stop_recording()
+                picam2.start_recording(StreamingHandler.video_encoder, StreamingHandler.video_output)
+                StreamingHandler.recording = True
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'started'}).encode('utf-8'))
+                
+            except Exception as e:
+                logging.error(f"Error starting recording: {str(e)}")
+                self.send_error(500)
+                self.end_headers()
+                
+        elif self.path == '/record/stop' and StreamingHandler.recording:
+            try:
+                picam2.stop_recording()
+                time.sleep(0.5)
+                
+                StreamingHandler.recording = False
+                StreamingHandler.video_encoder = None
+                StreamingHandler.video_output = None
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'stopped'}).encode('utf-8'))
+                
+            except Exception as e:
+                logging.error(f"Error stopping recording: {str(e)}")
+                self.send_error(500)
+                self.end_headers()
+        
+        else:
+            self.send_error(404)
+            self.end_headers()
 
-    elif self.path == '/capture_for_ai':
-        try:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f'ai_capture_{timestamp}.jpg'
-            filepath = os.path.join(MEDIA_DIR, filename)
-            
-            print("Attempting to capture image...") # Debug log
-            picam2.capture_file(filepath)
-            print(f"Image saved to {filepath}") # Debug log
-            
-            print("Converting to base64...") # Debug log
-            with open(filepath, 'rb') as f:
-                img_data = base64.b64encode(f.read()).decode('utf-8')
-            print("Base64 conversion complete") # Debug log
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                'status': 'success',
-                'image': img_data
-            }).encode('utf-8'))
-            
-        except Exception as e:
-            print(f"Error in capture_for_ai: {str(e)}") # Debug log
-            logging.error(f"Error in capture_for_ai: {str(e)}")
-            self.send_error(500)
-            self.end_headers()
-    
-    elif self.path == '/toggle_network':
-        try:
-            current_state = True  # Assume we start in AP mode
-            self.toggle_ap_mode(not current_state)  # Fixed: add self.
-            current_state = not current_state
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                'status': 'success',
-                'ap_mode': current_state
-            }).encode('utf-8'))
-            
-        except Exception as e:
-            self.send_error(500)
-            self.end_headers()
-    
-    elif self.path == '/ask_ai':
-        try:
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8'))
-            
-            API_KEY = 'sk-OWq2AG4U9BDUsSCZ-0xAaw'
-            API_BASE_URL = 'https://litellm.sph-prod.ethz.ch/v1'
-            
-            headers = {
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {API_KEY}'
-            }
-            
-            payload = {
-                "model": "claude-3.5-sonnet",
-                "messages": [{
-                    "role": "user",
-                    "content": f"I'm looking at a microscope image of {data['description']}. Please analyze what we can see in this sample and provide scientific insights."
-                }]
-            }
-            
-            api_response = requests.post(
-                f'{API_BASE_URL}/chat/completions',
-                headers=headers,
-                json=payload
-            )
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                'response': api_response.json()['choices'][0]['message']['content']
-            }).encode('utf-8'))
-            
-        except Exception as e:
-            self.send_error(500)
-            self.end_headers()
-
-    elif self.path == '/record/start' and not StreamingHandler.recording:
-        try:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f'video_{timestamp}.mp4'
-            filepath = os.path.join(MEDIA_DIR, filename)
-            
-            StreamingHandler.video_encoder = H264Encoder(
-                bitrate=10000000,
-                repeat=False,
-                iperiod=30,
-                quality=Quality.VERY_HIGH
-            )
-            
-            StreamingHandler.video_output = FileOutput(filepath)
-            picam2.stop_recording()
-            
-            picam2.start_recording(
-                encoder=StreamingHandler.video_encoder,
-                output=StreamingHandler.video_output
-            )
-            
-            StreamingHandler.recording = True
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'status': 'started'}).encode('utf-8'))
-            
-        except Exception as e:
-            logging.error(f"Error starting recording: {str(e)}")
-            self.send_response(500)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                'status': 'error', 
-                'message': str(e)
-            }).encode('utf-8'))
-            
-    elif self.path == '/record/stop' and StreamingHandler.recording:
-        try:
-            picam2.stop_recording()
-            time.sleep(0.5)
-            
-            StreamingHandler.recording = False
-            StreamingHandler.video_encoder = None
-            StreamingHandler.video_output = None
-            
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'status': 'stopped'}).encode('utf-8'))
-            
-        except Exception as e:
-            logging.error(f"Error stopping recording: {str(e)}")
-            self.send_response(500)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                'status': 'error',
-                'message': str(e)
-            }).encode('utf-8'))
-    
-    else:
-        self.send_error(404)
-        self.end_headers()
 
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
