@@ -11,6 +11,11 @@ import os
 import json
 from datetime import datetime
 import time
+import subprocess
+import base64
+import requests
+from PIL import Image
+import numpy as np
 
 # Create media directory if it doesn't exist
 MEDIA_DIR = '/var/www/html/media'
@@ -19,6 +24,7 @@ os.makedirs(MEDIA_DIR, exist_ok=True)
 def read_html_file(filename):
     with open(filename, 'r') as file:
         return file.read()
+
 
 # Read both HTML files
 try:
@@ -39,6 +45,16 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
+    
+    def toggle_ap_mode(enable=True):
+        """Toggle AP mode on/off using system commands"""
+        if enable:
+            subprocess.run(['sudo', 'systemctl', 'start', 'hostapd'])
+            subprocess.run(['sudo', 'systemctl', 'start', 'dnsmasq'])
+        else:
+            subprocess.run(['sudo', 'systemctl', 'stop', 'hostapd'])
+            subprocess.run(['sudo', 'systemctl', 'stop', 'dnsmasq'])
+    
     recording = False
     video_output = None
     video_encoder = None
@@ -148,87 +164,116 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == '/capture':
-            # Take a screenshot
+            # Your existing capture code
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f'capture_{timestamp}.jpg'
             filepath = os.path.join(MEDIA_DIR, filename)
-            
-            # Capture the current frame
             picam2.capture_file(filepath)
-            
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps({'status': 'success'}).encode('utf-8'))
-            
-        elif self.path == '/record/start' and not StreamingHandler.recording:
+                
+        elif self.path == '/capture_for_ai':
             try:
-                # Start recording
+                # Capture current frame
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f'video_{timestamp}.mp4'
+                filename = f'ai_capture_{timestamp}.jpg'
                 filepath = os.path.join(MEDIA_DIR, filename)
                 
-                # Configure H264 encoder with proper parameters
-                StreamingHandler.video_encoder = H264Encoder(
-                    bitrate=10000000,  # 10Mbps for better quality
-                    repeat=False,      # Don't repeat headers
-                    iperiod=30,       # Keyframe interval
-                    quality=Quality.VERY_HIGH  # Now this will work with the import
-                )
+                # Capture and save image
+                picam2.capture_file(filepath)
                 
-                # Configure output
-                StreamingHandler.video_output = FileOutput(filepath)
-                
-                # Stop the JPEG streaming first
-                picam2.stop_recording()
-                
-                # Start recording with the configured encoder and output
-                picam2.start_recording(
-                    encoder=StreamingHandler.video_encoder,
-                    output=StreamingHandler.video_output
-                )
-                
-                StreamingHandler.recording = True
+                # Convert to base64
+                with open(filepath, 'rb') as f:
+                    img_data = base64.b64encode(f.read()).decode('utf-8')
                 
                 self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({'status': 'started'}).encode('utf-8'))
-                
-            except Exception as e:
-                logging.error(f"Error starting recording: {str(e)}")
-                self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({
-                    'status': 'error', 
-                    'message': str(e)
+                    'status': 'success',
+                    'image': img_data
                 }).encode('utf-8'))
-            
-        elif self.path == '/record/stop' and StreamingHandler.recording:
+                
+            except Exception as e:
+                self.send_error(500)
+                self.end_headers()
+        
+        elif self.path == '/toggle_network':
             try:
-                # Properly stop the recording
-                picam2.stop_recording()
-                
-                # Add a small delay to ensure the file is properly closed
-                time.sleep(0.5)
-                
-                StreamingHandler.recording = False
-                StreamingHandler.video_encoder = None
-                StreamingHandler.video_output = None
+                current_state = True  # Assume we start in AP mode
+                toggle_ap_mode(not current_state)
+                current_state = not current_state
                 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({'status': 'stopped'}).encode('utf-8'))
+                self.wfile.write(json.dumps({
+                    'status': 'success',
+                    'ap_mode': current_state
+                }).encode('utf-8'))
                 
             except Exception as e:
-                logging.error(f"Error stopping recording: {str(e)}")
-                self.send_response(500)
+                self.send_error(500)
+                self.end_headers()
+        
+        elif self.path == '/ask_ai':
+            try:
+                content_length = int(self.headers['Content-Length'])
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+                
+                # Configure API request
+                API_KEY = 'sk-OWq2AG4U9BDUsSCZ-0xAaw'  # Replace with your actual API key
+                API_BASE_URL = 'https://litellm.sph-prod.ethz.ch/v1'
+                
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {API_KEY}'
+                }
+                
+                payload = {
+                    "model": "claude-3.5-sonnet",
+                    "messages": [{
+                        "role": "user",
+                        "content": f"I'm looking at a microscope image of {data['description']}. Please analyze what we can see in this sample and provide scientific insights."
+                    }]
+                }
+                
+                # Make API request
+                api_response = requests.post(
+                    f'{API_BASE_URL}chat/completions',
+                    headers=headers,
+                    json=payload
+                )
+                
+                # Send response back to client
+                self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
-
+                self.wfile.write(json.dumps({
+                    'response': api_response.json()['choices'][0]['message']['content']
+                }).encode('utf-8'))
+                
+            except Exception as e:
+                self.send_error(500)
+                self.end_headers()
+    
+        elif self.path == '/record/start' and not StreamingHandler.recording:
+            # Your existing recording start code
+            try:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f'video_{timestamp}.mp4'
+                filepath = os.path.join(MEDIA_DIR, filename)
+                # ... rest of your recording start code ...
+                
+        elif self.path == '/record/stop' and StreamingHandler.recording:
+            # Your existing recording stop code
+            try:
+                picam2.stop_recording()
+                # ... rest of your recording stop code ...
+                
         else:
             self.send_error(404)
             self.end_headers()
