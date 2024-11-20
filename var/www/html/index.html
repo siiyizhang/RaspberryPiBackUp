@@ -130,16 +130,16 @@
         
         document.getElementById('askAI').addEventListener('click', async () => {
             try {
-                // Backend 1: Save current frame
+                // Capture current frame and store in localStorage
                 const response = await fetch('/capture_for_ai', { method: 'POST' });
                 const data = await response.json();
                 localStorage.setItem('microscopeImage', data.image);
-                localStorage.setItem('imageTimestamp', Date.now());
                 
-                // Frontend 2 & Backend 2: Update layout & switch network
-                document.querySelector('.stream-section').classList.add('minimized');
-                document.querySelector('.ai-section').classList.add('active');
+                // Switch Pi to client mode
                 await fetch('/toggle_network', { method: 'POST' });
+                
+                // Redirect to AI analysis page
+                window.location.href = 'https://www.eurekamicroscope.com/ask-ai';
                 
             } catch (error) {
                 console.error('Error:', error);
