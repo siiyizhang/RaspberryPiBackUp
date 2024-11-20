@@ -111,6 +111,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 with open(filepath, 'rb') as f:
                     img_data = base64.b64encode(f.read()).decode('utf-8')
                 
+                # Send response
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
@@ -126,8 +127,8 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         
         elif self.path == '/toggle_network':
             try:
-                current_state = True  # True = AP mode
-                self.toggle_ap_mode(not current_state)
+                # Switch from AP to client mode
+                self.toggle_ap_mode(False)
                 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
