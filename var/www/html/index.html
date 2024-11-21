@@ -166,13 +166,27 @@
                 document.querySelector('.container').appendChild(aiSection);
                 console.log('AI section added');
                     
-                // Wait for network toggle to complete
-                const networkResponse = await networkTogglePromise;
-                if (!networkResponse.ok) {
-                    throw new Error(`Network toggle failed with status: ${networkResponse.status}`);
-                }
-                console.log('Network toggled successfully');
+                // Start network toggle in background with retry mechanism
+                let networkToggleSuccess = false;
+                const toggleNetwork = async () => {
+                    try {
+                        const networkResponse = await fetch('/toggle_network', { 
+                            method: 'POST',
+                            // Add shorter timeout
+                            signal: AbortSignal.timeout(2000)  // 2 second timeout
+                        });
+                        if (networkResponse.ok) {
+                            networkToggleSuccess = true;
+                            console.log('Network toggled successfully');
+                        }
+                    } catch (error) {
+                        console.log('Network toggle attempt failed:', error);
+                    }
+                };
         
+                // Start network toggle
+                toggleNetwork();
+                    
                 // Add submit handler
                 document.getElementById('submitSample').onclick = async () => {
                     const description = document.getElementById('sampleDescription').value;
@@ -181,9 +195,23 @@
                         return;
                     }
                     
-                    // Store description and redirect
                     localStorage.setItem('sampleDescription', description);
-                    window.location.href = 'https://www.eurekamicroscope.com/ask-ai';
+        
+                    // If network toggle wasn't successful, try again
+                    if (!networkToggleSuccess) {
+                        try {
+                            console.log('Retrying network toggle...');
+                            await fetch('/toggle_network', { method: 'POST' });
+                            // Wait a moment for connection to establish
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        } catch (error) {
+                            console.log('Retry failed:', error);
+                            // Continue anyway - phone might have auto-connected to mobile data
+                        }
+                    }
+        
+                    // Open in new tab
+                    window.open('https://www.eurekamicroscope.com/ask-ai', '_blank');
                 };
                     
             } catch (error) {
