@@ -131,19 +131,43 @@
         document.getElementById('askAI').addEventListener('click', async () => {
             try {
                 // Capture current frame and store in localStorage
+                console.log('Attempting to capture image...');
                 const response = await fetch('/capture_for_ai', { method: 'POST' });
+                if (!response.ok) {
+                    throw new Error(`Capture failed with status: ${response.status}`);
+                }
                 const data = await response.json();
+                console.log('Image captured successfully');
+                
+             // Store in localStorage
+            try {
                 localStorage.setItem('microscopeImage', data.image);
+                console.log('Image stored in localStorage');
+            } catch (storageError) {
+                console.error('Storage error:', storageError);
+                // The image might be too large for localStorage
+                alert('Error storing image. The image might be too large.');
+                return;
+            }
                 
-                // Switch Pi to client mode
-                await fetch('/toggle_network', { method: 'POST' });
-                
-                // Redirect to AI analysis page
-                window.location.href = 'https://www.eurekamicroscope.com/ask-ai';
-                
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error preparing AI analysis');
+            // Toggle network
+            console.log('Toggling network...');
+            const networkResponse = await fetch('/toggle_network', { method: 'POST' });
+            if (!networkResponse.ok) {
+                throw new Error(`Network toggle failed with status: ${networkResponse.status}`);
+            }
+            console.log('Network toggled successfully');
+            
+            // Small delay to allow network switch
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Redirect
+            console.log('Redirecting to AI analysis page...');
+            window.location.href = 'https://www.eurekamicroscope.com/ask-ai';
+            
+        } catch (error) {
+            console.error('Detailed error:', error);
+            alert(`Error preparing AI analysis: ${error.message}`);
             }
         });
 
