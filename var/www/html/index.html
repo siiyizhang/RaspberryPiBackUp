@@ -117,7 +117,7 @@
         
         document.getElementById('askAI').addEventListener('click', async () => {
             try {
-                // Capture current frame and store in localStorage
+                // First capture image
                 console.log('Attempting to capture image...');
                 const response = await fetch('/capture_for_ai', { method: 'POST' });
                 if (!response.ok) {
@@ -126,67 +126,69 @@
                 const data = await response.json();
                 console.log('Image captured successfully');
                 
-             // Store in localStorage
-            try {
-                localStorage.setItem('microscopeImage', data.image);
-                console.log('Image stored in localStorage');
-            } catch (storageError) {
-                console.error('Storage error:', storageError);
-                // The image might be too large for localStorage
-                alert('Error storing image. The image might be too large.');
-                return;
-            }
-
-            // Change layout and show sample input
-            console.log('Updating layout...');
-            const streamSection = document.querySelector('.stream-section');
-            streamSection.classList.add('minimized');
-            document.getElementById('streamImage').src = `data:image/jpeg;base64,${data.image}`;
-        
-            // Show sample input section
-            const aiSection = document.createElement('div');
-            aiSection.className = 'ai-section';
-            aiSection.style.display = 'block';  
-            aiSection.innerHTML = `
-                <p>Sample Analysis</p>
-                <div class="sample-form">
-                    <label style="color: white; display: block; margin-bottom: 10px;">What sample are you looking at?</label>
-                    <textarea 
-                        id="sampleDescription" 
-                        placeholder="Be specific (e.g., 'apple skin' rather than 'apple')"
-                        style="width: 100%; padding: 10px; margin: 10px 0; background: rgba(255,255,255,0.1); 
-                           color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;"
-                    ></textarea>
-                    <button id="submitSample" class="btn">Submit</button>
-                </div>
-            `;
-            document.querySelector('.container').appendChild(aiSection);
-            console.log('AI section added');
-                
-            // Toggle network
-            console.log('Toggling network...');
-            const networkResponse = await fetch('/toggle_network', { method: 'POST' });
-            if (!networkResponse.ok) {
-                throw new Error(`Network toggle failed with status: ${networkResponse.status}`);
-            }
-            console.log('Network toggled successfully');
-            
-            // Add submit handler
-            document.getElementById('submitSample').onclick = async () => {
-                const description = document.getElementById('sampleDescription').value;
-                if (!description) {
-                    alert('Please describe your sample');
+                // Store in localStorage
+                try {
+                    localStorage.setItem('microscopeImage', data.image);
+                    console.log('Image stored in localStorage');
+                } catch (storageError) {
+                    console.error('Storage error:', storageError);
+                    alert('Error storing image. The image might be too large.');
                     return;
                 }
+        
+                // Start network toggle immediately
+                console.log('Toggling network...');
+                const networkTogglePromise = fetch('/toggle_network', { method: 'POST' });
+        
+                // While network is toggling, update UI
+                console.log('Updating layout...');
+                const streamSection = document.querySelector('.stream-section');
+                streamSection.classList.add('minimized');
+                document.getElementById('streamImage').src = `data:image/jpeg;base64,${data.image}`;
             
-            // Store description and redirect
-            localStorage.setItem('sampleDescription', description);
-            window.location.href = 'https://www.eurekamicroscope.com/ask-ai';
-        };
-            
-        } catch (error) {
-            console.error('Detailed error:', error);
-            alert(`Error preparing AI analysis: ${error.message}`);
+                // Show sample input section
+                const aiSection = document.createElement('div');
+                aiSection.className = 'ai-section';
+                aiSection.style.display = 'block';  
+                aiSection.innerHTML = `
+                    <p>Sample Analysis</p>
+                    <div class="sample-form">
+                        <label style="color: white; display: block; margin-bottom: 10px;">What sample are you looking at?</label>
+                        <textarea 
+                            id="sampleDescription" 
+                            placeholder="Be specific (e.g., 'apple skin' rather than 'apple')"
+                            style="width: 100%; padding: 10px; margin: 10px 0; background: rgba(255,255,255,0.1); 
+                               color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;"
+                        ></textarea>
+                        <button id="submitSample" class="btn btn-primary">Submit</button>
+                    </div>
+                `;
+                document.querySelector('.container').appendChild(aiSection);
+                console.log('AI section added');
+                    
+                // Wait for network toggle to complete
+                const networkResponse = await networkTogglePromise;
+                if (!networkResponse.ok) {
+                    throw new Error(`Network toggle failed with status: ${networkResponse.status}`);
+                }
+                console.log('Network toggled successfully');
+        
+                // Add submit handler
+                document.getElementById('submitSample').onclick = async () => {
+                    const description = document.getElementById('sampleDescription').value;
+                    if (!description) {
+                        alert('Please describe your sample');
+                        return;
+                    }
+                    
+                    // Store description and redirect
+                    localStorage.setItem('sampleDescription', description);
+                    window.location.href = 'https://www.eurekamicroscope.com/ask-ai';
+                };
+                    
+            } catch (error) {
+                console.error('Detailed error:', error);
+                alert(`Error preparing AI analysis: ${error.message}`);
             }
         });
 
