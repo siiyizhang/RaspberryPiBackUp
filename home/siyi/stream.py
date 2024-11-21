@@ -43,21 +43,6 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
-    @classmethod
-    def toggle_ap_mode(cls, enable=True):
-        """Toggle AP mode on/off using system commands"""
-        try:
-            if enable:
-                subprocess.run(['sudo', 'systemctl', 'start', 'hostapd'], check=True)
-                subprocess.run(['sudo', 'systemctl', 'start', 'dnsmasq'], check=True)
-                logging.info("AP mode enabled")
-            else:
-                subprocess.run(['sudo', 'systemctl', 'stop', 'hostapd'], check=True)
-                subprocess.run(['sudo', 'systemctl', 'stop', 'dnsmasq'], check=True)
-                logging.info("AP mode disabled")
-        except Exception as e:
-            logging.error(f"Error toggling AP mode: {str(e)}")
-            raise
 
     def do_GET(self):
         if self.path == '/':
@@ -136,7 +121,8 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             try:
                 # Use your shell script directly
                 logging.debug('Starting network toggle...')
-                result = subprocess.run(['sudo', '/home/siyi/wifi_toggle.sh'], 
+                result = subprocess.run('sudo /home/siyi/wifi_toggle.sh client', 
+                                 shell=True,
                                  check=True,
                                  capture_output=True,
                                  text=True)
