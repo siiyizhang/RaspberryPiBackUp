@@ -13,6 +13,8 @@ from datetime import datetime
 import time
 import subprocess
 import base64
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 # Create media directory if it doesn't exist
 MEDIA_DIR = '/var/www/html/media'
@@ -100,18 +102,23 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         
         if self.path == '/capture_for_ai':
             try:
+                logging.debug('Starting image capture...')
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 filename = f'ai_capture_{timestamp}.jpg'
                 filepath = os.path.join(MEDIA_DIR, filename)
                 
                 # Capture and save image
+                logging.debug(f'Capturing to file: {filepath}')
                 picam2.capture_file(filepath)
                 
                 # Convert to base64
+                
+                logging.debug('Converting to base64...')
                 with open(filepath, 'rb') as f:
                     img_data = base64.b64encode(f.read()).decode('utf-8')
                 
                 # Send response
+                logging.debug('Sending response...')
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
@@ -121,14 +128,19 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 }).encode('utf-8'))
                 
             except Exception as e:
-                logging.error(f"Error in capture_for_ai: {str(e)}")
+                logging.error(f"Detailed capture error: {str(e)}", exc_info=True)
                 self.send_error(500)
                 self.end_headers()
         
         elif self.path == '/toggle_network':
             try:
-                # Switch from AP to client mode
-                self.toggle_ap_mode(False)
+                # Use your shell script directly
+                logging.debug('Starting network toggle...')
+                result = subprocess.run(['sudo', '~/wifi_toggle.sh'], 
+                                 check=True,
+                                 capture_output=True,
+                                 text=True)
+                logging.debug(f'Script output: {result.stdout}')
                 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
@@ -138,7 +150,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 }).encode('utf-8'))
                 
             except Exception as e:
-                logging.error(f"Error toggling network: {str(e)}")
+                logging.error(f"Detailed network error: {str(e)}", exc_info=True)
                 self.send_error(500)
                 self.end_headers()
         
