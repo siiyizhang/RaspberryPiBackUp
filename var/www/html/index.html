@@ -28,6 +28,7 @@
 
         .stream-section.minimized {
             width: 25%;
+            transition: width 0.3s ease;
         }
 
         .stream-container {
@@ -58,14 +59,16 @@
             margin-top: 20px;
         }
 
-        #sampleDescription {
+        .sample-form textarea {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
-            border: 1px solid #ddd;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 4px;
-            min-height: 100px;
-            font-family: Arial, sans-serif;
+            color: white;
+            font-family: Avenir, Arial, sans-serif;
+            resize: vertical;
         }
 
         .button-group {
@@ -149,6 +152,27 @@
                 alert('Error storing image. The image might be too large.');
                 return;
             }
+
+            // Change layout and show sample input
+            console.log('Updating layout...');
+            document.querySelector('.stream-section').classList.add('minimized');
+            document.getElementById('streamImage').src = `data:image/jpeg;base64,${data.image}`;
+            
+            // Show sample input section
+            const aiSection = document.createElement('div');
+            aiSection.className = 'ai-section';
+            aiSection.innerHTML = `
+                <h2>Sample Analysis</h2>
+                <div class="sample-form">
+                    <label>What sample are you looking at?</label>
+                    <textarea 
+                        id="sampleDescription" 
+                        placeholder="Be specific (e.g., 'apple skin' rather than 'apple')"
+                    ></textarea>
+                    <button id="submitSample" class="btn">Submit</button>
+                </div>
+            `;
+            document.querySelector('.container').appendChild(aiSection);
                 
             // Toggle network
             console.log('Toggling network...');
@@ -158,12 +182,18 @@
             }
             console.log('Network toggled successfully');
             
-            // Small delay to allow network switch
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Add submit handler
+            document.getElementById('submitSample').onclick = async () => {
+                const description = document.getElementById('sampleDescription').value;
+                if (!description) {
+                    alert('Please describe your sample');
+                    return;
+                }
             
-            // Redirect
-            console.log('Redirecting to AI analysis page...');
+            // Store description and redirect
+            localStorage.setItem('sampleDescription', description);
             window.location.href = 'https://www.eurekamicroscope.com/ask-ai';
+        };
             
         } catch (error) {
             console.error('Detailed error:', error);
