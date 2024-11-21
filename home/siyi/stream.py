@@ -136,7 +136,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             try:
                 # Use your shell script directly
                 logging.debug('Starting network toggle...')
-                result = subprocess.run(['sudo', '~/wifi_toggle.sh'], 
+                result = subprocess.run(['sudo', '/home/siyi/wifi_toggle.sh'], 
                                  check=True,
                                  capture_output=True,
                                  text=True)
