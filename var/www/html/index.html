@@ -110,25 +110,10 @@
             </div>
         </div>
 
-        <div class="ai-section">
-            <p>AI Analysis</p>
-            <div class="sample-form">
-                <p>What sample are you looking at?</p>
-                <p>Please be specific (e.g., "apple skin" rather than just "apple")</p>
-                <textarea 
-                    id="sampleDescription" 
-                    placeholder="Describe your sample..."
-                    required
-                ></textarea>
-                <div class="button-group">
-                    <button class="btn btn-primary" id="confirmSample">Submit</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
-        const WIX_URL = 'https://your-wix-site.com/microscope-ai';  // Replace with your Wix URL
+        const WIX_URL = 'https://www.eurekamicroscope.com/ask-ai';  // Replace with your Wix URL
         
         document.getElementById('askAI').addEventListener('click', async () => {
             try {
@@ -205,19 +190,6 @@
             }
         });
 
-        document.getElementById('confirmSample').addEventListener('click', async () => {
-            const description = document.getElementById('sampleDescription').value;
-            if (!description) {
-                alert('Please describe your sample');
-                return;
-            }
-            
-            // Backend 3: Save sample description
-            localStorage.setItem('sampleDescription', description);
-            
-            // Frontend 4: Open external page
-            window.location.href = WIX_URL;
-        });
     </script>
 </body>
 </html>
