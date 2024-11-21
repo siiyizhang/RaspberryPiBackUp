@@ -111,9 +111,9 @@
         </div>
 
         <div class="ai-section">
-            <h2>AI Analysis</h2>
+            <p>AI Analysis</p>
             <div class="sample-form">
-                <h3>What sample are you looking at?</h3>
+                <p>What sample are you looking at?</p>
                 <p>Please be specific (e.g., "apple skin" rather than just "apple")</p>
                 <textarea 
                     id="sampleDescription" 
@@ -154,24 +154,29 @@
 
             // Change layout and show sample input
             console.log('Updating layout...');
-            document.querySelector('.stream-section').classList.add('minimized');
+            const streamSection = document.querySelector('.stream-section');
+            streamSection.classList.add('minimized');
             document.getElementById('streamImage').src = `data:image/jpeg;base64,${data.image}`;
-            
+        
             // Show sample input section
             const aiSection = document.createElement('div');
             aiSection.className = 'ai-section';
+            aiSection.style.display = 'block';  
             aiSection.innerHTML = `
-                <h2>Sample Analysis</h2>
+                <p>Sample Analysis</p>
                 <div class="sample-form">
-                    <label>What sample are you looking at?</label>
+                    <label style="color: white; display: block; margin-bottom: 10px;">What sample are you looking at?</label>
                     <textarea 
                         id="sampleDescription" 
                         placeholder="Be specific (e.g., 'apple skin' rather than 'apple')"
+                        style="width: 100%; padding: 10px; margin: 10px 0; background: rgba(255,255,255,0.1); 
+                           color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;"
                     ></textarea>
                     <button id="submitSample" class="btn">Submit</button>
                 </div>
             `;
             document.querySelector('.container').appendChild(aiSection);
+            console.log('AI section added');
                 
             // Toggle network
             console.log('Toggling network...');
