@@ -155,7 +155,7 @@
                     .catch(error => console.log('Network toggle error:', error));
                     
                 // Add submit handler
-                document.getElementById('submitSample').onclick = async () => {
+                document.getElementById('submitSample').onclick = () => {
                     const description = document.getElementById('sampleDescription').value;
                     if (!description) {
                         alert('Please describe your sample');
@@ -163,7 +163,7 @@
                     }
                     
                 // Get stored image
-                const imageData = localStorage.getItem('microscopeImage');
+                const imageData = document.getElementById('streamImage').src.split(',')[1];
                 
                 // Create URL with encoded parameters
                 const url = new URL('https://www.eurekamicroscope.com/ask-ai');
