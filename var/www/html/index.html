@@ -135,17 +135,14 @@
                     alert('Error storing image. The image might be too large.');
                     return;
                 }
-        
-                // Start network toggle immediately
-                console.log('Toggling network...');
-                const networkTogglePromise = fetch('/toggle_network', { method: 'POST' });
-        
-                // While network is toggling, update UI
+                
+                //update UI
                 console.log('Updating layout...');
                 const streamSection = document.querySelector('.stream-section');
                 streamSection.classList.add('minimized');
                 document.getElementById('streamImage').src = `data:image/jpeg;base64,${data.image}`;
-            
+        
+
                 // Show sample input section
                 const aiSection = document.createElement('div');
                 aiSection.className = 'ai-section';
@@ -166,26 +163,10 @@
                 document.querySelector('.container').appendChild(aiSection);
                 console.log('AI section added');
                     
-                // Start network toggle in background with retry mechanism
-                let networkToggleSuccess = false;
-                const toggleNetwork = async () => {
-                    try {
-                        const networkResponse = await fetch('/toggle_network', { 
-                            method: 'POST',
-                            // Add shorter timeout
-                            signal: AbortSignal.timeout(2000)  // 2 second timeout
-                        });
-                        if (networkResponse.ok) {
-                            networkToggleSuccess = true;
-                            console.log('Network toggled successfully');
-                        }
-                    } catch (error) {
-                        console.log('Network toggle attempt failed:', error);
-                    }
-                };
-        
-                // Start network toggle
-                toggleNetwork();
+                // Start network toggle in background (single attempt)
+                fetch('/toggle_network', { method: 'POST' })
+                    .then(() => console.log('Network toggle initiated'))
+                    .catch(error => console.log('Network toggle error:', error));
                     
                 // Add submit handler
                 document.getElementById('submitSample').onclick = async () => {
@@ -195,23 +176,15 @@
                         return;
                     }
                     
+                    // Store description
                     localStorage.setItem('sampleDescription', description);
-        
-                    // If network toggle wasn't successful, try again
-                    if (!networkToggleSuccess) {
-                        try {
-                            console.log('Retrying network toggle...');
-                            await fetch('/toggle_network', { method: 'POST' });
-                            // Wait a moment for connection to establish
-                            await new Promise(resolve => setTimeout(resolve, 1000));
-                        } catch (error) {
-                            console.log('Retry failed:', error);
-                            // Continue anyway - phone might have auto-connected to mobile data
-                        }
-                    }
-        
-                    // Open in new tab
-                    window.open('https://www.eurekamicroscope.com/ask-ai', '_blank');
+                    console.log('Sample description stored');
+                    
+                    // Show transition message
+                    alert('Please wait a moment while connecting to internet, then click OK');
+                    
+                    // Redirect instead of opening new window
+                    window.location.href = 'https://www.eurekamicroscope.com/ask-ai';
                 };
                     
             } catch (error) {
