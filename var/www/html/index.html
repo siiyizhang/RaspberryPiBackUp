@@ -162,13 +162,14 @@
                         return;
                     }
                     
-                // Get stored image
-                const imageData = document.getElementById('streamImage').src.split(',')[1];
+                // Get base64 image data
+                const imgSrc = document.getElementById('streamImage').src;    
+                const imageData = imgSrc.includes('base64') ? imgSrc.split(',')[1] : imgSrc;
                 
                 // Create URL with encoded parameters
                 const url = new URL('https://www.eurekamicroscope.com/ask-ai');
-                url.searchParams.append('description', encodeURIComponent(description));
-                url.searchParams.append('image', encodeURIComponent(imageData));
+                url.searchParams.append('description', description);
+                url.searchParams.append('image', imageData);
                 
                 // Show transition message
                 alert('Please wait a moment while connecting to internet, then click OK');
