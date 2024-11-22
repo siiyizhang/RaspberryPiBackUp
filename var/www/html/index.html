@@ -176,15 +176,19 @@
                         return;
                     }
                     
-                    // Store description
-                    localStorage.setItem('sampleDescription', description);
-                    console.log('Sample description stored');
-                    
-                    // Show transition message
-                    alert('Please wait a moment while connecting to internet, then click OK');
-                    
-                    // Redirect instead of opening new window
-                    window.location.href = 'https://www.eurekamicroscope.com/ask-ai';
+                // Get stored image
+                const imageData = localStorage.getItem('microscopeImage');
+                
+                // Create URL with encoded parameters
+                const url = new URL('https://www.eurekamicroscope.com/ask-ai');
+                url.searchParams.append('description', encodeURIComponent(description));
+                url.searchParams.append('image', encodeURIComponent(imageData));
+                
+                // Show transition message
+                alert('Please wait a moment while connecting to internet, then click OK');
+                
+                // Redirect with parameters
+                window.location.href = url.toString();
                 };
                     
             } catch (error) {
