@@ -161,23 +161,32 @@
                         alert('Please describe your sample');
                         return;
                     }
+                    const imageData = document.getElementById('streamImage').src;
+
+                    // Create and submit form
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = 'https://www.eurekamicroscope.com/ask-ai';
+
+                    // Add image data
+                    const imgInput = document.createElement('input');
+                    imgInput.type = 'hidden';
+                    imgInput.name = 'image';
+                    imgInput.value = imageData;
+
+                    // Add description
+                    const descInput = document.createElement('input');
+                    descInput.type = 'hidden';
+                    descInput.name = 'description';
+                    descInput.value = description;
                     
-                // Get base64 image data
-                const imgSrc = document.getElementById('streamImage').src;    
-                const imageData = imgSrc.includes('base64') ? imgSrc.split(',')[1] : imgSrc;
-                
-                // Create URL with encoded parameters
-                const url = new URL('https://www.eurekamicroscope.com/ask-ai');
-                url.searchParams.append('description', description);
-                url.searchParams.append('image', imageData);
-                
-                // Show transition message
-                alert('Please wait a moment while connecting to internet, then click OK');
-                
-                // Redirect with parameters
-                window.location.href = url.toString();
+                    form.appendChild(imgInput);
+                    form.appendChild(descInput);
+                    document.body.appendChild(form);
+                    form.submit();
+
                 };
-                    
+                            
             } catch (error) {
                 console.error('Detailed error:', error);
                 alert(`Error preparing AI analysis: ${error.message}`);
