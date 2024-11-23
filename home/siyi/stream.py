@@ -112,20 +112,13 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 filename = f'ai_capture_{timestamp}.jpg'
                 filepath = os.path.join(MEDIA_DIR, filename)
                 
-                # 临时配置一个较低分辨率的拍照配置
-                still_config = picam2.create_still_configuration(main={"size": (800, 600)})
-                
-                # 切换到低分辨率配置，拍照，然后切回视频流配置
-                current_config = picam2.camera_configuration()
-                picam2.switch_mode(still_config)
+               # Capture at full resolution
                 picam2.capture_file(filepath)
-                picam2.switch_mode(current_config)
                 
-                # 转换为base64
-                logging.debug('Converting to base64')
+                # Convert to base64
                 with open(filepath, 'rb') as f:
                     img_data = base64.b64encode(f.read()).decode('utf-8')
-                
+                    
                 # 删除临时文件
                 os.remove(filepath)
                 
