@@ -113,85 +113,71 @@
     </div>
 
     <script>
-        const WIX_URL = 'https://www.eurekamicroscope.com/ask-ai';  // Replace with your Wix URL
-        
         document.getElementById('askAI').addEventListener('click', async () => {
-            try {
-                // First capture image
-                const response = await fetch('/capture_for_ai', { method: 'POST' });
-                if (!response.ok) {
-                    throw new Error(`Capture failed with status: ${response.status}`);
-                }
-                const data = await response.json();
-                
-                // Store and update UI
-                localStorage.setItem('microscopeImage', data.image);
-                document.querySelector('.stream-section').classList.add('minimized');
-                document.getElementById('streamImage').src = `data:image/jpeg;base64,${data.image}`
-        
-
-                // Show sample input section
-                const aiSection = document.createElement('div');
-                aiSection.className = 'ai-section';
-                aiSection.style.display = 'block';  
-                aiSection.innerHTML = `
-                    <p>Sample Analysis</p>
-                    <div class="sample-form">
-                        <label style="color: white; display: block; margin-bottom: 10px;">What sample are you looking at?</label>
-                        <textarea 
-                            id="sampleDescription" 
-                            placeholder="Be specific (e.g., 'apple skin' rather than 'apple')"
-                            style="width: 100%; padding: 10px; margin: 10px 0; background: rgba(255,255,255,0.1); 
-                               color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;"
-                        ></textarea>
-                        <button id="submitSample" class="btn btn-primary">Submit</button>
-                    </div>
-                `;
-                document.querySelector('.container').appendChild(aiSection);
-                    
-                // Start network toggle in background (single attempt)
-                fetch('/toggle_network', { method: 'POST' })
-                    .then(() => console.log('Network toggle initiated'))
-                    .catch(error => console.log('Network toggle error:', error));
-                    
-                // Add submit handler
-                document.getElementById('submitSample').onclick = () => {
-                    const description = document.getElementById('sampleDescription').value;
-                    if (!description) {
-                        alert('Please describe your sample');
-                        return;
-                    }
-                    const imageData = document.getElementById('streamImage').src;
-
-                    // Create and submit form
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = 'https://www.eurekamicroscope.com/ask-ai';
-
-                    // Add image data
-                    const imgInput = document.createElement('input');
-                    imgInput.type = 'hidden';
-                    imgInput.name = 'image';
-                    imgInput.value = imageData;
-
-                    // Add description
-                    const descInput = document.createElement('input');
-                    descInput.type = 'hidden';
-                    descInput.name = 'description';
-                    descInput.value = description;
-                    
-                    form.appendChild(imgInput);
-                    form.appendChild(descInput);
-                    document.body.appendChild(form);
-                    form.submit();
-
-                };
-                            
-            } catch (error) {
-                console.error('Detailed error:', error);
-                alert(`Error preparing AI analysis: ${error.message}`);
+        try {
+            // First capture image
+            const response = await fetch('/capture_for_ai', { method: 'POST' });
+            if (!response.ok) {
+                throw new Error(`Capture failed with status: ${response.status}`);
             }
-        });
+            const data = await response.json();
+    
+            // Store and update UI
+            const sessionId = Date.now().toString();
+            sessionStorage.setItem('microscopeData', JSON.stringify({
+                image: data.image,
+                sessionId: sessionId
+            }));
+    
+            document.querySelector('.stream-section').classList.add('minimized');
+            document.getElementById('streamImage').src = `data:image/jpeg;base64,${data.image}`;
+    
+            // Show sample input section
+            const aiSection = document.createElement('div');
+            aiSection.className = 'ai-section';
+            aiSection.style.display = 'block';
+            aiSection.innerHTML = `
+                <p>Sample Analysis</p>
+                <div class="sample-form">
+                    <label style="color: white; display: block; margin-bottom: 10px;">What sample are you looking at?</label>
+                    <textarea 
+                        id="sampleDescription" 
+                        placeholder="Be specific (e.g., 'apple skin' rather than 'apple')"
+                        style="width: 100%; padding: 10px; margin: 10px 0; background: rgba(255,255,255,0.1); 
+                               color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;"
+                    ></textarea>
+                    <button id="submitSample" class="btn btn-primary">Submit</button>
+                </div>
+            `;
+            document.querySelector('.container').appendChild(aiSection);
+    
+            // Start network toggle in background
+            fetch('/toggle_network', { method: 'POST' })
+                .then(() => console.log('Network toggle initiated'))
+                .catch(error => console.log('Network toggle error:', error));
+    
+            // Add submit handler
+            document.getElementById('submitSample').onclick = () => {
+                const description = document.getElementById('sampleDescription').value;
+                if (!description) {
+                    alert('Please describe your sample');
+                    return;
+                }
+    
+                // Store description in sessionStorage
+                const storedData = JSON.parse(sessionStorage.getItem('microscopeData'));
+                storedData.description = description;
+                sessionStorage.setItem('microscopeData', JSON.stringify(storedData));
+    
+                // Redirect to Wix page
+                window.location.href = 'https://www.eurekamicroscope.com/ask-ai';
+            };
+    
+        } catch (error) {
+            console.error('Detailed error:', error);
+            alert(`Error preparing AI analysis: ${error.message}`);
+        }
+    });
 
     </script>
 </body>
