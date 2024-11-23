@@ -13,8 +13,17 @@ from datetime import datetime
 import time
 import subprocess
 import base64
-import logging
-logging.basicConfig(level=logging.DEBUG)
+import traceback  # 添加用于详细错误跟踪
+
+# 增强日志配置
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('/var/log/microscope.log')  # 添加文件日志
+    ]
+)
 
 # Create media directory if it doesn't exist
 MEDIA_DIR = '/var/www/html/media'
@@ -43,6 +52,17 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
+    def _send_cors_headers(self):
+        """添加CORS头"""
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+
+    def do_OPTIONS(self):
+        """处理OPTIONS请求"""
+        self.send_response(200)
+        self._send_cors_headers()
+        self.end_headers()
 
     def do_GET(self):
         if self.path == '/':
@@ -83,52 +103,109 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        
         if self.path == '/capture_for_ai':
             try:
-                logging.debug('Starting image capture...')
+                logging.info('Starting image capture for AI analysis')
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 filename = f'ai_capture_{timestamp}.jpg'
                 filepath = os.path.join(MEDIA_DIR, filename)
                 
+                # 捕获图像
+                logging.debug(f'Capturing to file: {filepath}')
                 picam2.capture_file(filepath)
                 
+                # 转换为base64
+                logging.debug('Converting to base64')
                 with open(filepath, 'rb') as f:
                     img_data = base64.b64encode(f.read()).decode('utf-8')
                 
+                # 删除临时文件
+                os.remove(filepath)
+                
+                # 发送响应
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
+                self._send_cors_headers()
                 self.end_headers()
-                self.wfile.write(json.dumps({
+                
+                response_data = {
                     'status': 'success',
-                    'image': img_data
-                }).encode('utf-8'))
+                    'image': img_data,
+                    'timestamp': datetime.now().isoformat()
+                }
+                self.wfile.write(json.dumps(response_data).encode('utf-8'))
+                logging.info('Image capture and processing completed successfully')
                 
             except Exception as e:
-                logging.error(f"Capture error: {str(e)}", exc_info=True)
-                self.send_error(500)
+                logging.error(f"Detailed capture error: {str(e)}")
+                logging.error(traceback.format_exc())
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self._send_cors_headers()
                 self.end_headers()
+                error_response = {
+                    'status': 'error',
+                    'message': str(e),
+                    'details': traceback.format_exc()
+                }
+                self.wfile.write(json.dumps(error_response).encode('utf-8'))
         
         elif self.path == '/toggle_network':
             try:
-                logging.debug('Starting network toggle...')
-                result = subprocess.run('sudo /home/siyi/wifi_toggle.sh client', 
-                                 shell=True,
-                                 check=True,
-                                 capture_output=True,
-                                 text=True)
-                logging.debug(f'Script output: {result.stdout}')
+                logging.info('Starting network toggle')
+                
+                # 执行网络切换脚本
+                result = subprocess.run(
+                    'sudo /home/siyi/wifi_toggle.sh client',
+                    shell=True,
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+                
+                logging.debug(f'Network toggle script output: {result.stdout}')
                 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
+                self._send_cors_headers()
                 self.end_headers()
-                self.wfile.write(json.dumps({
-                    'status': 'success'
-                }).encode('utf-8'))
                 
-            except Exception as e:
-                logging.error(f"Network error: {str(e)}", exc_info=True)
-                self.send_error(500)
+                response_data = {
+                    'status': 'success',
+                    'message': 'Network mode switched to client'
+                }
+                self.wfile.write(json.dumps(response_data).encode('utf-8'))
+                logging.info('Network toggle completed successfully')
+                
+            except subprocess.CalledProcessError as e:
+                logging.error(f"Network toggle script error: {str(e)}")
+                logging.error(f"Script output: {e.output}")
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self._send_cors_headers()
                 self.end_headers()
+                error_response = {
+                    'status': 'error',
+                    'message': f"Network toggle failed: {str(e)}",
+                    'details': e.output
+                }
+                self.wfile.write(json.dumps(error_response).encode('utf-8'))
+            
+            except Exception as e:
+                logging.error(f"Unexpected network toggle error: {str(e)}")
+                logging.error(traceback.format_exc())
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self._send_cors_headers()
+                self.end_headers()
+                error_response = {
+                    'status': 'error',
+                    'message': str(e),
+                    'details': traceback.format_exc()
+                }
+                self.wfile.write(json.dumps(error_response).encode('utf-8'))
         
         else:
             self.send_error(404)
@@ -147,6 +224,8 @@ picam2.start_recording(JpegEncoder(), FileOutput(output))
 try:
     address = ('', 8000)
     server = StreamingServer(address, StreamingHandler)
+    logging.info('Starting streaming server on port 8000')
     server.serve_forever()
 finally:
+    logging.info('Stopping camera and server')
     picam2.stop_recording()
