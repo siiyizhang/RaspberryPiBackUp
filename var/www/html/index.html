@@ -110,154 +110,185 @@
             </div>
         </div>
 
+        <div class="ai-section">
+            <h2>AI Analysis</h2>
+            <div class="sample-form">
+                <h3>What sample are you looking at?</h3>
+                <p>Please be specific (e.g., "apple skin" rather than just "apple")</p>
+                <textarea 
+                    id="sampleDescription" 
+                    placeholder="Describe your sample..."
+                    required
+                ></textarea>
+                <div class="button-group">
+                    <button class="btn btn-primary" id="confirmSample">Submit</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-    const WIX_URL = 'https://your-wix-site.com/microscope-ai';  // 记得改成你的 Wix URL
-    
-    function showInstruction(message) {
-        const instructionDiv = document.createElement('div');
-        instructionDiv.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            color: black;
-            padding: 20px;
-            border-radius: 8px;
-            z-index: 1000;
-            max-width: 80%;
-            text-align: center;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        `;
-        instructionDiv.innerHTML = `
-            <h3>Connection Instructions</h3>
-            <p>${message}</p>
-            <button id="continueToWix" style="
-                padding: 10px 20px;
-                background: #4CAF50;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                margin-top: 10px;
-                cursor: pointer;
-            ">Continue to Analysis</button>
-        `;
-        document.body.appendChild(instructionDiv);
-    }
-    
-    function showLoading(message) {
-        const loadingDiv = document.createElement('div');
-        loadingDiv.id = 'loadingState';
-        loadingDiv.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            z-index: 1000;
-        `;
-        loadingDiv.textContent = message;
-        document.body.appendChild(loadingDiv);
-    }
-    
-    function hideLoading() {
-        const loadingDiv = document.getElementById('loadingState');
-        if (loadingDiv) loadingDiv.remove();
-    }
-    
-    // 准备URL和数据
-    function prepareWixRedirectUrl(imageData, description) {
-        const data = encodeURIComponent(JSON.stringify({
-            image: imageData,
-            description: description,
-            timestamp: new Date().getTime()
-        }));
-        return `${WIX_URL}?data=${data}`;
-    }
-    
-    document.getElementById('askAI').addEventListener('click', async () => {
-        try {
-            showLoading('Capturing image...');
-            
-            // 1. 捕获图像
-            const response = await fetch('/capture_for_ai', { method: 'POST' });
-            if (!response.ok) throw new Error(`Capture failed: ${response.status}`);
-            const data = await response.json();
-            
-            // 2. 最小化视频流显示
-            document.querySelector('.stream-section').classList.add('minimized');
-            document.querySelector('.ai-section').classList.add('active');
-            
-            // 3. 存储图像数据到localStorage (不用sessionStorage因为网络切换后session会丢失)
-            localStorage.setItem('capturedImage', data.image);
-            
-            hideLoading();
-            
-        } catch (error) {
-            console.error('Error:', error);
-            hideLoading();
-            alert(`Error: ${error.message}`);
-        }
-    });
-    
-    document.getElementById('confirmSample').addEventListener('click', async () => {
-        try {
-            const description = document.getElementById('sampleDescription').value;
-            if (!description) {
-                alert('Please describe your sample');
-                return;
+        // 等待DOM完全加载后再执行
+        document.addEventListener('DOMContentLoaded', function() {
+            const WIX_URL = 'https://your-wix-site.com/microscope-ai';  // 记得改成你的 Wix URL
+
+            function showInstruction(message) {
+                const instructionDiv = document.createElement('div');
+                instructionDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: white;
+                    color: black;
+                    padding: 20px;
+                    border-radius: 8px;
+                    z-index: 1000;
+                    max-width: 80%;
+                    text-align: center;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+                `;
+                instructionDiv.innerHTML = `
+                    <h3>Connection Instructions</h3>
+                    <p>${message}</p>
+                    <button id="continueToWix" style="
+                        padding: 10px 20px;
+                        background: #4CAF50;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        margin-top: 10px;
+                        cursor: pointer;
+                    ">Continue to Analysis</button>
+                `;
+                document.body.appendChild(instructionDiv);
             }
-    
-            showLoading('Preparing network switch...');
-    
-            // 1. 获取之前保存的图像数据
-            const imageData = localStorage.getItem('capturedImage');
-            if (!imageData) {
-                throw new Error('Image data not found');
+
+            function showLoading(message) {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'loadingState';
+                loadingDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0,0,0,0.8);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    z-index: 1000;
+                `;
+                loadingDiv.textContent = message;
+                document.body.appendChild(loadingDiv);
             }
-            
-            // 2. 准备重定向URL并保存
-            const redirectUrl = prepareWixRedirectUrl(imageData, description);
-            localStorage.setItem('wixRedirectUrl', redirectUrl);
-            
-            hideLoading();
-            
-            // 3. 显示说明
-            showInstruction(`
-                1. Please connect to a network with internet access.
-                2. Once connected, click the button below to continue to analysis.
-            `);
-            
-            // 4. 设置继续按钮的事件监听器
-            document.getElementById('continueToWix').addEventListener('click', () => {
-                const savedUrl = localStorage.getItem('wixRedirectUrl');
-                if (savedUrl) {
-                    window.location.href = savedUrl;
-                    // 清理localStorage
-                    localStorage.removeItem('capturedImage');
-                    localStorage.removeItem('wixRedirectUrl');
-                } else {
-                    alert('Error: Redirect URL not found. Please try again.');
-                }
-            });
-            
-            // 5. 直接执行网络切换
-            const networkResponse = await fetch('/toggle_network', { method: 'POST' });
-            if (!networkResponse.ok) {
-                throw new Error('Network switch failed');
+
+            function hideLoading() {
+                const loadingDiv = document.getElementById('loadingState');
+                if (loadingDiv) loadingDiv.remove();
             }
-            
-        } catch (error) {
-            console.error('Error:', error);
-            hideLoading();
-            alert(`Error: ${error.message}`);
-        }
-    });
+
+            // 准备URL和数据
+            function prepareWixRedirectUrl(imageData, description) {
+                const data = encodeURIComponent(JSON.stringify({
+                    image: imageData,
+                    description: description,
+                    timestamp: new Date().getTime()
+                }));
+                return `${WIX_URL}?data=${data}`;
+            }
+
+            // 获取按钮元素
+            const askAIButton = document.getElementById('askAI');
+            const confirmSampleButton = document.getElementById('confirmSample');
+
+            // 确保按钮存在后再添加事件监听器
+            if (askAIButton) {
+                askAIButton.addEventListener('click', async () => {
+                    try {
+                        showLoading('Capturing image...');
+                        
+                        // 1. 捕获图像
+                        const response = await fetch('/capture_for_ai', { method: 'POST' });
+                        if (!response.ok) throw new Error(`Capture failed: ${response.status}`);
+                        const data = await response.json();
+                        
+                        // 2. 最小化视频流显示
+                        document.querySelector('.stream-section').classList.add('minimized');
+                        document.querySelector('.ai-section').classList.add('active');
+                        
+                        // 3. 存储图像数据到localStorage
+                        localStorage.setItem('capturedImage', data.image);
+                        
+                        hideLoading();
+                        
+                    } catch (error) {
+                        console.error('Error:', error);
+                        hideLoading();
+                        alert(`Error: ${error.message}`);
+                    }
+                });
+            } else {
+                console.error('Ask AI button not found');
+            }
+
+            if (confirmSampleButton) {
+                confirmSampleButton.addEventListener('click', async () => {
+                    try {
+                        const description = document.getElementById('sampleDescription').value;
+                        if (!description) {
+                            alert('Please describe your sample');
+                            return;
+                        }
+
+                        showLoading('Preparing network switch...');
+
+                        // 1. 获取之前保存的图像数据
+                        const imageData = localStorage.getItem('capturedImage');
+                        if (!imageData) {
+                            throw new Error('Image data not found');
+                        }
+                        
+                        // 2. 准备重定向URL并保存
+                        const redirectUrl = prepareWixRedirectUrl(imageData, description);
+                        localStorage.setItem('wixRedirectUrl', redirectUrl);
+                        
+                        hideLoading();
+                        
+                        // 3. 显示说明
+                        showInstruction(`
+                            1. Please connect to a network with internet access.
+                            2. Once connected, click the button below to continue to analysis.
+                        `);
+                        
+                        // 4. 设置继续按钮的事件监听器
+                        document.getElementById('continueToWix').addEventListener('click', () => {
+                            const savedUrl = localStorage.getItem('wixRedirectUrl');
+                            if (savedUrl) {
+                                window.location.href = savedUrl;
+                                // 清理localStorage
+                                localStorage.removeItem('capturedImage');
+                                localStorage.removeItem('wixRedirectUrl');
+                            } else {
+                                alert('Error: Redirect URL not found. Please try again.');
+                            }
+                        });
+                        
+                        // 5. 直接执行网络切换
+                        const networkResponse = await fetch('/toggle_network', { method: 'POST' });
+                        if (!networkResponse.ok) {
+                            throw new Error('Network switch failed');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error:', error);
+                        hideLoading();
+                        alert(`Error: ${error.message}`);
+                    }
+                });
+            } else {
+                console.error('Confirm Sample button not found');
+            }
+        });
     </script>
 </body>
 </html>
