@@ -83,8 +83,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
-        content_length = int(self.headers.get('Content-Length', 0))
-        
         if self.path == '/capture_for_ai':
             try:
                 logging.debug('Starting image capture...')
@@ -92,18 +90,11 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 filename = f'ai_capture_{timestamp}.jpg'
                 filepath = os.path.join(MEDIA_DIR, filename)
                 
-                # Capture and save image
-                logging.debug(f'Capturing to file: {filepath}')
                 picam2.capture_file(filepath)
                 
-                # Convert to base64
-                
-                logging.debug('Converting to base64...')
                 with open(filepath, 'rb') as f:
                     img_data = base64.b64encode(f.read()).decode('utf-8')
                 
-                # Send response
-                logging.debug('Sending response...')
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
@@ -113,13 +104,12 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 }).encode('utf-8'))
                 
             except Exception as e:
-                logging.error(f"Detailed capture error: {str(e)}", exc_info=True)
+                logging.error(f"Capture error: {str(e)}", exc_info=True)
                 self.send_error(500)
                 self.end_headers()
         
         elif self.path == '/toggle_network':
             try:
-                # Use your shell script directly
                 logging.debug('Starting network toggle...')
                 result = subprocess.run('sudo /home/siyi/wifi_toggle.sh client', 
                                  shell=True,
@@ -136,7 +126,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 }).encode('utf-8'))
                 
             except Exception as e:
-                logging.error(f"Detailed network error: {str(e)}", exc_info=True)
+                logging.error(f"Network error: {str(e)}", exc_info=True)
                 self.send_error(500)
                 self.end_headers()
         
