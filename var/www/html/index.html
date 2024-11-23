@@ -128,6 +128,39 @@
     </div>
 
     <script>
+        function compressImage(base64String) {
+            return new Promise((resolve, reject) => {
+                // Create an image element
+                const img = new Image();
+                img.onload = () => {
+                    // Create canvas
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Keep original dimensions but reduce quality
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    // Draw image on canvas
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // Get compressed base64 (0.5 is the quality, adjust between 0-1)
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.3);
+                    
+                    // Remove the data URL prefix
+                    const base64Data = compressedBase64.replace(/^data:image\/jpeg;base64,/, '');
+                    resolve(base64Data);
+                };
+                
+                img.onerror = (error) => {
+                    reject(error);
+                };
+                
+                // Load the image
+                img.src = `data:image/jpeg;base64,${base64String}`;
+            });
+        }
+        
         // 等待DOM完全加载后再执行
         document.addEventListener('DOMContentLoaded', function() {
             const WIX_URL = 'https://www.eurekamicroscope.com/ask-ai';  // 记得改成你的 Wix URL
@@ -207,17 +240,21 @@
                     try {
                         showLoading('Capturing image...');
                         
-                        // 1. 捕获图像
+                        // 1. Capture image
                         const response = await fetch('/capture_for_ai', { method: 'POST' });
                         if (!response.ok) throw new Error(`Capture failed: ${response.status}`);
                         const data = await response.json();
                         
-                        // 2. 最小化视频流显示
+                        // 2. Compress image
+                        showLoading('Processing image...');
+                        const compressedImage = await compressImage(data.image);
+                        
+                        // 3. Store compressed image
+                        localStorage.setItem('capturedImage', compressedImage);
+                        
+                        // 4. Update UI
                         document.querySelector('.stream-section').classList.add('minimized');
                         document.querySelector('.ai-section').classList.add('active');
-                        
-                        // 3. 存储图像数据到localStorage
-                        localStorage.setItem('capturedImage', data.image);
                         
                         hideLoading();
                         
