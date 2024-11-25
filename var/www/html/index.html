@@ -2,20 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Microscope Stream</title>
     <style>
+        /* Force full height on iOS */
+        html {
+            height: -webkit-fill-available;
+        }
+
         body {
             margin: 0;
             padding: 0;
             background: #000;
             color: white;
             font-family: 'Avenir', sans-serif;
+            /* Use the full available height */
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            /* Prevent bounce/elastic scroll on iOS */
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
         }
 
         .container {
             position: relative;
             height: 100vh;
+            height: -webkit-fill-available;
             width: 100vw;
             overflow: hidden;
         }
@@ -23,8 +36,7 @@
         .stream-container {
             width: 100%;
             height: 100%;
-            position: relative;
-            position: relative;
+            position: absolute;
             top: 0;
             left: 0;
         }
@@ -37,12 +49,14 @@
 
         .controls {
             position: absolute;
-            bottom: 20px;
+            bottom: max(20px, env(safe-area-inset-bottom));
             left: 0;
             right: 0;
             text-align: center;
             z-index: 10;
             pointer-events: none;
+            /* Account for notches and home indicators */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
         .btn {
@@ -57,16 +71,18 @@
             font-size: 16px;
             pointer-events: auto;
             transition: background 0.2s ease;
+            font-family: 'Avenir', sans-serif;
         }
+
         .btn:hover {
             background: #259e9d;
         }
+
         .btn:disabled {
             background: #238482;
             cursor: not-allowed;
         }
 
-        /* Confirmation popup styles */
         .overlay {
             display: none;
             position: fixed;
@@ -91,6 +107,7 @@
             text-align: center;
             max-width: 90%;
             width: 350px;
+            font-family: 'Avenir', sans-serif;
         }
 
         .popup-buttons {
@@ -116,11 +133,10 @@
         </div>
     </div>
 
-    <!-- Confirmation popup -->
     <div class="overlay" id="overlay"></div>
     <div class="popup" id="confirmationPopup">
         <div class="popup-message">
-            Please make sure you have saved the image and are connected to the internet before continuing.
+            Please make sure you are connected to the internet before continuing.
         </div>
         <div class="popup-buttons">
             <button class="btn" id="cancelButton">Cancel</button>
@@ -137,6 +153,15 @@
             const continueButton = document.getElementById('continueButton');
             const cancelButton = document.getElementById('cancelButton');
             const streamImage = document.getElementById('streamImage');
+
+            // Handle iOS Safari's full height
+            const resizeHeight = () => {
+                document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+            };
+            
+            window.addEventListener('resize', resizeHeight);
+            window.addEventListener('orientationchange', resizeHeight);
+            resizeHeight();
 
             async function captureFrame() {
                 const response = await fetch('/capture_for_ai', { method: 'POST' });
@@ -160,13 +185,8 @@
                     askAIButton.disabled = true;
                     askAIButton.textContent = 'Capturing...';
                     
-                    // Capture image
                     const imageData = await captureFrame();
-                    
-                    // Display captured image
                     streamImage.src = `data:image/jpeg;base64,${imageData}`;
-                    
-                    // Show confirmation popup
                     showPopup();
                     
                 } catch (error) {
