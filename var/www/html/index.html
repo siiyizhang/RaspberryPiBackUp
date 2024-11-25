@@ -107,7 +107,7 @@
                 <img src="stream.mjpg" alt="Live Stream" id="streamImage">
             </div>
             <div class="controls">
-                <button class="btn" id="askAI">Ask AI</button>
+                <button class="btn" id="askAI">Ask AI (this will switch to WiFi mode)</button>
             </div>
         </div>
 
@@ -119,7 +119,7 @@
                     placeholder="Please describe your sample (e.g., apple skin, plant leaf, etc.)"
                     rows="4"
                 ></textarea>
-                <div id="loadingMessage">Switching network mode...</div>
+                <div id="loadingMessage">Please wait...</div>
                 <button class="btn" id="submitButton">Submit</button>
             </div>
         </div>
@@ -129,6 +129,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const WIX_URL = 'https://www.eurekamicroscope.com/ask-ai';
             let capturedImage = null;
+            let networkSwitched = false;
 
             const askAIButton = document.getElementById('askAI');
             const submitButton = document.getElementById('submitButton');
@@ -144,17 +145,38 @@
                 return data.image;
             }
 
+            async function toggleNetwork() {
+                loadingMessage.style.display = 'block';
+                loadingMessage.textContent = 'Switching to WiFi mode...';
+                
+                const networkResponse = await fetch('/toggle_network', { method: 'POST' });
+                if (!networkResponse.ok) {
+                    throw new Error('Failed to switch network mode');
+                }
+                
+                networkSwitched = true;
+                loadingMessage.textContent = 'Connected to WiFi';
+                setTimeout(() => {
+                    loadingMessage.style.display = 'none';
+                }, 2000);
+            }
+
             askAIButton.addEventListener('click', async () => {
                 try {
                     askAIButton.disabled = true;
-                    askAIButton.textContent = 'Capturing...';
+                    askAIButton.textContent = 'Processing...';
                     
-                    // Capture image
+                    // First capture the image
+                    loadingMessage.style.display = 'block';
+                    loadingMessage.textContent = 'Capturing image...';
                     const imageData = await captureFrame();
                     capturedImage = imageData;
                     
                     // Display captured image
                     streamImage.src = `data:image/jpeg;base64,${imageData}`;
+                    
+                    // Then switch network mode
+                    await toggleNetwork();
                     
                     // Show input section
                     streamSection.classList.add('minimized');
@@ -162,10 +184,12 @@
                     
                 } catch (error) {
                     console.error('Error:', error);
-                    alert('Failed to capture image. Please try again.');
-                } finally {
+                    alert('Error: ' + error.message);
                     askAIButton.disabled = false;
-                    askAIButton.textContent = 'Ask AI';
+                    loadingMessage.style.display = 'none';
+                } finally {
+                    askAIButton.disabled = true; // Keep disabled after successful capture
+                    askAIButton.textContent = 'Image Captured';
                 }
             });
 
@@ -176,14 +200,12 @@
                     return;
                 }
 
-                loadingMessage.style.display = 'block';
-                submitButton.disabled = true;
+                if (!networkSwitched) {
+                    alert('Network mode not switched. Please try again.');
+                    return;
+                }
 
                 try {
-                    // Switch network mode
-                    const networkResponse = await fetch('/toggle_network', { method: 'POST' });
-                    if (!networkResponse.ok) throw new Error('Failed to switch network mode');
-
                     // Prepare URL data
                     const data = encodeURIComponent(JSON.stringify({
                         description: description,
@@ -195,9 +217,7 @@
 
                 } catch (error) {
                     console.error('Error:', error);
-                    alert('Failed to switch network mode. Please try again.');
-                    loadingMessage.style.display = 'none';
-                    submitButton.disabled = false;
+                    alert('Error: ' + error.message);
                 }
             });
         });
