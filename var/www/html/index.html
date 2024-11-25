@@ -70,6 +70,18 @@
             resize: vertical;
         }
 
+        .btn {
+            min-height: 44px;
+            min-width: 44px;
+            padding: 12px 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
         .btn:disabled {
             background: #2C632E;
             cursor: not-allowed;
@@ -78,70 +90,6 @@
         .controls {
             padding: 10px;
             text-align: center;
-        }
-        
-        .mobile-save-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            padding: 20px;
-            border-radius: 10px;
-            z-index: 1000;
-            text-align: center;
-            max-width: 90%;
-            width: 350px;
-        }
-
-        .mobile-save-modal img {
-            max-width: 100%;
-            max-height: 50vh;
-            margin: 10px 0;
-            object-fit: contain;
-        }
-
-        .device-specific-instructions {
-            margin: 15px 0;
-            line-height: 1.5;
-            font-size: 16px;
-            color: white;
-        }
-
-        .modal-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .download-link {
-            display: inline-block;
-            padding: 12px 24px;
-            background: #2196F3;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            margin: 10px 0;
-        }
-
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 999;
-        }
-
-        /* Make buttons more touch-friendly */
-        .btn {
-            min-height: 44px; /* Minimum touch target size */
-            min-width: 44px;
-            padding: 12px 24px;
         }
 
         #loadingMessage {
@@ -159,7 +107,7 @@
                 <img src="stream.mjpg" alt="Live Stream" id="streamImage">
             </div>
             <div class="controls">
-                <button class="btn" id="askAI">Ask AI (please download the image you want to ask about before clicking)</button>
+                <button class="btn" id="askAI">Ask AI</button>
             </div>
         </div>
 
@@ -177,22 +125,6 @@
         </div>
     </div>
 
-    <div class="overlay" id="overlay"></div>
-    
-    <div class="mobile-save-modal" id="mobileModal">
-        <h3>Save Microscope Image</h3>
-        <img id="capturedImagePreview" src="" alt="Captured Image">
-        <div id="deviceInstructions" class="device-specific-instructions">
-            <!-- Instructions will be filled based on device -->
-        </div>
-        <a href="#" id="downloadLink" class="download-link" download="microscope-image.jpg">
-            Download Image
-        </a>
-        <div class="modal-buttons">
-            <button class="btn" id="modalContinueBtn">Continue</button>
-        </div>
-    </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const WIX_URL = 'https://www.eurekamicroscope.com/ask-ai';
@@ -204,63 +136,13 @@
             const streamSection = document.querySelector('.stream-section');
             const inputSection = document.querySelector('.input-section');
             const streamImage = document.getElementById('streamImage');
-            const overlay = document.getElementById('overlay');
-            const mobileModal = document.getElementById('mobileModal');
-            const modalContinueBtn = document.getElementById('modalContinueBtn');
-            const deviceInstructions = document.getElementById('deviceInstructions');
-            const downloadLink = document.getElementById('downloadLink');
-            const capturedImagePreview = document.getElementById('capturedImagePreview');
 
-            
-            // Detect device type
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            const isAndroid = /Android/.test(navigator.userAgent);
-            const isMobile = isIOS || isAndroid;
-
-            
-            function getDeviceInstructions() {
-                if (isIOS) {
-                    return `
-                        To save this image to your Photos:
-                        <br>1. Press and hold the image above
-                        <br>2. Select "Add to Photos"
-                        <br>3. Click "Continue" when done
-                    `;
-                } else if (isAndroid) {
-                    return `
-                        To save this image:
-                        <br>1. Tap the "Download Image" button
-                        <br>2. Allow any permission requests
-                        <br>3. The image will be saved to your Downloads or Pictures folder
-                        <br>4. Click "Continue" when done
-                    `;
-                } else {
-                    return `
-                        Click the "Download Image" button to save the image to your device.
-                        <br>Click "Continue" when done.
-                    `;
-                }
+            async function captureFrame() {
+                const response = await fetch('/capture_for_ai', { method: 'POST' });
+                if (!response.ok) throw new Error('Failed to capture image');
+                const data = await response.json();
+                return data.image;
             }
-            
-            function showMobileModal(imageBase64) {
-                overlay.style.display = 'block';
-                mobileModal.style.display = 'block';
-                deviceInstructions.innerHTML = getDeviceInstructions();
-                capturedImagePreview.src = `data:image/jpeg;base64,${imageBase64}`;
-                
-                // Set up download link
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                downloadLink.href = `data:image/jpeg;base64,${imageBase64}`;
-                downloadLink.download = `microscope-capture-${timestamp}.jpg`;
-            }
-
-            modalContinueBtn.addEventListener('click', () => {
-                overlay.style.display = 'none';
-                mobileModal.style.display = 'none';
-                streamSection.classList.add('minimized');
-                inputSection.classList.add('active');
-            });
-
 
             askAIButton.addEventListener('click', async () => {
                 try {
@@ -271,31 +153,19 @@
                     const imageData = await captureFrame();
                     capturedImage = imageData;
                     
-                    // Display captured image in stream section
+                    // Display captured image
                     streamImage.src = `data:image/jpeg;base64,${imageData}`;
-
-                    if (isMobile) {
-                        // Show mobile-friendly modal with appropriate instructions
-                        showMobileModal(imageData);
-                    } else {
-                        // For desktop: direct download and continue
-                        const blob = await fetch(`data:image/jpeg;base64,${imageData}`).then(r => r.blob());
-                        const a = document.createElement('a');
-                        a.href = URL.createObjectURL(blob);
-                        a.download = `microscope-capture-${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
-                        a.click();
-                        URL.revokeObjectURL(a.href);
-                        
-                        streamSection.classList.add('minimized');
-                        inputSection.classList.add('active');
-                    }
+                    
+                    // Show input section
+                    streamSection.classList.add('minimized');
+                    inputSection.classList.add('active');
                     
                 } catch (error) {
                     console.error('Error:', error);
                     alert('Failed to capture image. Please try again.');
                 } finally {
                     askAIButton.disabled = false;
-                    askAIButton.textContent = 'Ask AI (this will save current image to your device)';
+                    askAIButton.textContent = 'Ask AI';
                 }
             });
 
