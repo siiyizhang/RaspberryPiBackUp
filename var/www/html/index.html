@@ -14,19 +14,7 @@
         }
 
         .container {
-            display: flex;
             min-height: 100vh;
-            transition: all 0.3s ease;
-        }
-
-        .stream-section {
-            width: 100%;
-            padding: 20px;
-            transition: width 0.3s ease;
-        }
-
-        .stream-section.minimized {
-            width: 75%;
         }
 
         .stream-container {
@@ -41,33 +29,9 @@
             object-fit: contain;
         }
 
-        .input-section {
-            width: 0;
-            padding: 0;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            background: #1a1a1a;
-        }
-
-        .input-section.active {
-            width: 25%;
+        .controls {
             padding: 20px;
-        }
-
-        .sample-form {
-            margin-top: 20px;
-        }
-
-        textarea {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 4px;
-            color: white;
-            font-family: Arial, sans-serif;
-            resize: vertical;
+            text-align: center;
         }
 
         .btn {
@@ -87,143 +51,125 @@
             cursor: not-allowed;
         }
 
-        .controls {
-            padding: 10px;
-            text-align: center;
+        /* Confirmation popup styles */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
         }
 
-        #loadingMessage {
+        .popup {
             display: none;
-            padding: 10px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
             text-align: center;
-            color: #4CAF50;
+            max-width: 90%;
+            width: 350px;
+        }
+
+        .popup-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .popup-message {
+            margin-bottom: 20px;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="stream-section">
-            <div class="stream-container">
-                <img src="stream.mjpg" alt="Live Stream" id="streamImage">
-            </div>
-            <div class="controls">
-                <button class="btn" id="askAI">Ask AI</button>
-            </div>
+        <div class="stream-container">
+            <img src="stream.mjpg" alt="Live Stream" id="streamImage">
         </div>
+        <div class="controls">
+            <button class="btn" id="askAI">Ask AI</button>
+        </div>
+    </div>
 
-        <div class="input-section">
-            <h2>Sample Description</h2>
-            <div class="sample-form">
-                <textarea 
-                    id="sampleDescription" 
-                    placeholder="Please describe your sample (e.g., apple skin, plant leaf, etc.)"
-                    rows="4"
-                ></textarea>
-                <div id="loadingMessage">Please wait...</div>
-                <button class="btn" id="submitButton">Submit</button>
-            </div>
+    <!-- Confirmation popup -->
+    <div class="overlay" id="overlay"></div>
+    <div class="popup" id="confirmationPopup">
+        <div class="popup-message">
+            Please make sure you are connected to the internet before continuing.
+        </div>
+        <div class="popup-buttons">
+            <button class="btn" id="cancelButton">Cancel</button>
+            <button class="btn" id="continueButton">Continue</button>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const WIX_URL = 'https://www.eurekamicroscope.com/ask-ai';
-            let capturedImage = null;
-            let networkSwitched = false;
-
             const askAIButton = document.getElementById('askAI');
-            const submitButton = document.getElementById('submitButton');
-            const loadingMessage = document.getElementById('loadingMessage');
-            const streamSection = document.querySelector('.stream-section');
-            const inputSection = document.querySelector('.input-section');
+            const overlay = document.getElementById('overlay');
+            const popup = document.getElementById('confirmationPopup');
+            const continueButton = document.getElementById('continueButton');
+            const cancelButton = document.getElementById('cancelButton');
             const streamImage = document.getElementById('streamImage');
 
             async function captureFrame() {
-                console.log('Starting image capture...');
                 const response = await fetch('/capture_for_ai', { method: 'POST' });
                 if (!response.ok) throw new Error('Failed to capture image');
                 const data = await response.json();
-                console.log('Image captured successfully');
                 return data.image;
             }
 
-            async function toggleNetwork() {
-                console.log('Starting network toggle...');
-                const response = await fetch('/toggle_network', { method: 'POST' });
-                if (!response.ok) throw new Error('Failed to switch network mode');
-                const data = await response.json();
-                console.log('Network toggle completed:', data);
-                return data;
+            function showPopup() {
+                overlay.style.display = 'block';
+                popup.style.display = 'block';
             }
 
-            function showInputSection() {
-                console.log('Showing input section');
-                streamSection.classList.add('minimized');
-                inputSection.classList.add('active');
+            function hidePopup() {
+                overlay.style.display = 'none';
+                popup.style.display = 'none';
             }
 
             askAIButton.addEventListener('click', async () => {
-                console.log('Ask AI button clicked');
-                askAIButton.disabled = true;
-                askAIButton.textContent = 'Processing...';
-                loadingMessage.style.display = 'block';
-
                 try {
+                    askAIButton.disabled = true;
+                    askAIButton.textContent = 'Capturing...';
+                    
                     // Capture image
-                    loadingMessage.textContent = 'Capturing image...';
                     const imageData = await captureFrame();
-                    capturedImage = imageData;
                     
                     // Display captured image
                     streamImage.src = `data:image/jpeg;base64,${imageData}`;
-                    console.log('Image displayed');
-
-                    // Switch network mode
-                    loadingMessage.textContent = 'Switching to WiFi mode...';
-                    await toggleNetwork();
-                    networkSwitched = true;
-                    console.log('Network switched');
-
-                    // Update UI
-                    loadingMessage.textContent = 'Ready';
-                    askAIButton.textContent = 'Image Captured';
-                    showInputSection();
                     
-                    // Hide loading message after a delay
-                    setTimeout(() => {
-                        loadingMessage.style.display = 'none';
-                    }, 2000);
-
+                    // Show confirmation popup
+                    showPopup();
+                    
                 } catch (error) {
-                    console.error('Error during processing:', error);
-                    alert('Error: ' + error.message);
+                    console.error('Error:', error);
+                    alert('Failed to capture image. Please try again.');
+                } finally {
                     askAIButton.disabled = false;
                     askAIButton.textContent = 'Ask AI';
-                    loadingMessage.style.display = 'none';
                 }
             });
 
-            submitButton.addEventListener('click', async () => {
-                const description = document.getElementById('sampleDescription').value;
-                if (!description) {
-                    alert('Please enter a sample description');
-                    return;
-                }
+            continueButton.addEventListener('click', () => {
+                hidePopup();
+                window.location.href = WIX_URL;
+            });
 
-                try {
-                    // Prepare URL data
-                    const data = encodeURIComponent(JSON.stringify({
-                        description: description,
-                        timestamp: new Date().getTime()
-                    }));
-
-                    // Redirect to Wix site
-                    window.location.href = `${WIX_URL}?data=${data}`;
-
-                } catch (error) {
-                    console.error('Error during submission:', error);
-                    alert('Error: ' + error.message);
-                }
+            cancelButton.addEventListener('click', () => {
+                hidePopup();
             });
         });
     </script>
