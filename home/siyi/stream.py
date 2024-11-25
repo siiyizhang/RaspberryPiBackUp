@@ -112,17 +112,17 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 filename = f'ai_capture_{timestamp}.jpg'
                 filepath = os.path.join(MEDIA_DIR, filename)
                 
-               # Capture at full resolution
+                # Capture high-resolution image
                 picam2.capture_file(filepath)
                 
                 # Convert to base64
                 with open(filepath, 'rb') as f:
                     img_data = base64.b64encode(f.read()).decode('utf-8')
                     
-                # 删除临时文件
+                # Clean up temporary file
                 os.remove(filepath)
                 
-                # 发送响应
+                # Send response
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self._send_cors_headers()
@@ -134,10 +134,10 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     'timestamp': datetime.now().isoformat()
                 }
                 self.wfile.write(json.dumps(response_data).encode('utf-8'))
-                logging.info('Image capture and processing completed successfully')
+                logging.info('Image capture completed successfully')
                 
             except Exception as e:
-                logging.error(f"Detailed capture error: {str(e)}")
+                logging.error(f"Capture error: {str(e)}")
                 logging.error(traceback.format_exc())
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
@@ -145,8 +145,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 self.end_headers()
                 error_response = {
                     'status': 'error',
-                    'message': str(e),
-                    'details': traceback.format_exc()
+                    'message': str(e)
                 }
                 self.wfile.write(json.dumps(error_response).encode('utf-8'))
         
@@ -154,7 +153,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             try:
                 logging.info('Starting network toggle')
                 
-                # 执行网络切换脚本
+                # Execute network switch script
                 result = subprocess.run(
                     'sudo /home/siyi/wifi_toggle.sh client',
                     shell=True,
@@ -163,7 +162,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     text=True
                 )
                 
-                logging.debug(f'Network toggle script output: {result.stdout}')
+                logging.info(f'Network toggle output: {result.stdout}')
                 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
@@ -172,36 +171,19 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 
                 response_data = {
                     'status': 'success',
-                    'message': 'Network mode switched to client'
+                    'message': 'Network switched to client mode'
                 }
                 self.wfile.write(json.dumps(response_data).encode('utf-8'))
-                logging.info('Network toggle completed successfully')
                 
-            except subprocess.CalledProcessError as e:
-                logging.error(f"Network toggle script error: {str(e)}")
-                logging.error(f"Script output: {e.output}")
-                self.send_response(500)
-                self.send_header('Content-Type', 'application/json')
-                self._send_cors_headers()
-                self.end_headers()
-                error_response = {
-                    'status': 'error',
-                    'message': f"Network toggle failed: {str(e)}",
-                    'details': e.output
-                }
-                self.wfile.write(json.dumps(error_response).encode('utf-8'))
-            
             except Exception as e:
-                logging.error(f"Unexpected network toggle error: {str(e)}")
-                logging.error(traceback.format_exc())
+                logging.error(f"Network toggle error: {str(e)}")
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self._send_cors_headers()
                 self.end_headers()
                 error_response = {
                     'status': 'error',
-                    'message': str(e),
-                    'details': traceback.format_exc()
+                    'message': str(e)
                 }
                 self.wfile.write(json.dumps(error_response).encode('utf-8'))
         
