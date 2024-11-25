@@ -10,17 +10,23 @@
             padding: 0;
             background: #000;
             color: white;
-            font-family: Arial, sans-serif;
+            font-family: 'Avenir', sans-serif;
         }
 
         .container {
-            min-height: 100vh;
+            position: relative;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
         }
 
         .stream-container {
             width: 100%;
-            height: calc(100vh - 120px);
+            height: 100%;
             position: relative;
+            position: relative;
+            top: 0;
+            left: 0;
         }
 
         .stream-container img {
@@ -30,24 +36,33 @@
         }
 
         .controls {
-            padding: 20px;
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
             text-align: center;
+            z-index: 10;
+            pointer-events: none;
         }
 
         .btn {
             min-height: 44px;
             min-width: 44px;
             padding: 12px 24px;
-            background: #4CAF50;
+            background: #2dbab8;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            pointer-events: auto;
+            transition: background 0.2s ease;
         }
-
+        .btn:hover {
+            background: #259e9d;
+        }
         .btn:disabled {
-            background: #2C632E;
+            background: #238482;
             cursor: not-allowed;
         }
 
@@ -105,7 +120,7 @@
     <div class="overlay" id="overlay"></div>
     <div class="popup" id="confirmationPopup">
         <div class="popup-message">
-            Please make sure you are connected to the internet before continuing.
+            Please make sure you have saved the image and are connected to the internet before continuing.
         </div>
         <div class="popup-buttons">
             <button class="btn" id="cancelButton">Cancel</button>
