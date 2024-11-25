@@ -107,7 +107,7 @@
                 <img src="stream.mjpg" alt="Live Stream" id="streamImage">
             </div>
             <div class="controls">
-                <button class="btn" id="askAI">Ask AI (this will switch to WiFi mode)</button>
+                <button class="btn" id="askAI">Ask AI</button>
             </div>
         </div>
 
@@ -139,57 +139,67 @@
             const streamImage = document.getElementById('streamImage');
 
             async function captureFrame() {
+                console.log('Starting image capture...');
                 const response = await fetch('/capture_for_ai', { method: 'POST' });
                 if (!response.ok) throw new Error('Failed to capture image');
                 const data = await response.json();
+                console.log('Image captured successfully');
                 return data.image;
             }
 
             async function toggleNetwork() {
-                loadingMessage.style.display = 'block';
-                loadingMessage.textContent = 'Switching to WiFi mode...';
-                
-                const networkResponse = await fetch('/toggle_network', { method: 'POST' });
-                if (!networkResponse.ok) {
-                    throw new Error('Failed to switch network mode');
-                }
-                
-                networkSwitched = true;
-                loadingMessage.textContent = 'Connected to WiFi';
-                setTimeout(() => {
-                    loadingMessage.style.display = 'none';
-                }, 2000);
+                console.log('Starting network toggle...');
+                const response = await fetch('/toggle_network', { method: 'POST' });
+                if (!response.ok) throw new Error('Failed to switch network mode');
+                const data = await response.json();
+                console.log('Network toggle completed:', data);
+                return data;
+            }
+
+            function showInputSection() {
+                console.log('Showing input section');
+                streamSection.classList.add('minimized');
+                inputSection.classList.add('active');
             }
 
             askAIButton.addEventListener('click', async () => {
+                console.log('Ask AI button clicked');
+                askAIButton.disabled = true;
+                askAIButton.textContent = 'Processing...';
+                loadingMessage.style.display = 'block';
+
                 try {
-                    askAIButton.disabled = true;
-                    askAIButton.textContent = 'Processing...';
-                    
-                    // First capture the image
-                    loadingMessage.style.display = 'block';
+                    // Capture image
                     loadingMessage.textContent = 'Capturing image...';
                     const imageData = await captureFrame();
                     capturedImage = imageData;
                     
                     // Display captured image
                     streamImage.src = `data:image/jpeg;base64,${imageData}`;
-                    
-                    // Then switch network mode
+                    console.log('Image displayed');
+
+                    // Switch network mode
+                    loadingMessage.textContent = 'Switching to WiFi mode...';
                     await toggleNetwork();
+                    networkSwitched = true;
+                    console.log('Network switched');
+
+                    // Update UI
+                    loadingMessage.textContent = 'Ready';
+                    askAIButton.textContent = 'Image Captured';
+                    showInputSection();
                     
-                    // Show input section
-                    streamSection.classList.add('minimized');
-                    inputSection.classList.add('active');
-                    
+                    // Hide loading message after a delay
+                    setTimeout(() => {
+                        loadingMessage.style.display = 'none';
+                    }, 2000);
+
                 } catch (error) {
-                    console.error('Error:', error);
+                    console.error('Error during processing:', error);
                     alert('Error: ' + error.message);
                     askAIButton.disabled = false;
+                    askAIButton.textContent = 'Ask AI';
                     loadingMessage.style.display = 'none';
-                } finally {
-                    askAIButton.disabled = true; // Keep disabled after successful capture
-                    askAIButton.textContent = 'Image Captured';
                 }
             });
 
@@ -197,11 +207,6 @@
                 const description = document.getElementById('sampleDescription').value;
                 if (!description) {
                     alert('Please enter a sample description');
-                    return;
-                }
-
-                if (!networkSwitched) {
-                    alert('Network mode not switched. Please try again.');
                     return;
                 }
 
@@ -216,7 +221,7 @@
                     window.location.href = `${WIX_URL}?data=${data}`;
 
                 } catch (error) {
-                    console.error('Error:', error);
+                    console.error('Error during submission:', error);
                     alert('Error: ' + error.message);
                 }
             });
