@@ -4,24 +4,20 @@ import socketserver
 from http import server
 from threading import Condition
 from picamera2 import Picamera2
-from picamera2.encoders import JpegEncoder, H264Encoder
+from picamera2.encoders import JpegEncoder
 from picamera2.outputs import FileOutput
-from picamera2.encoders import Quality
 import os
 import json
 from datetime import datetime
-import time
-import subprocess
 import base64
-import traceback  # 添加用于详细错误跟踪
 
-# 增强日志配置
+# Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('/var/log/microscope.log')  # 添加文件日志
+        logging.FileHandler('/var/log/microscope.log')
     ]
 )
 
@@ -36,7 +32,6 @@ def read_html_file(filename):
 # Read HTML files
 try:
     MAIN_PAGE = read_html_file('/var/www/html/index.html')
-    ALBUM_PAGE = read_html_file('/var/www/html/album.html')
 except FileNotFoundError as e:
     logging.error(f"HTML file not found: {e}")
     raise
@@ -53,13 +48,11 @@ class StreamingOutput(io.BufferedIOBase):
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
     def _send_cors_headers(self):
-        """添加CORS头"""
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
     def do_OPTIONS(self):
-        """处理OPTIONS请求"""
         self.send_response(200)
         self._send_cors_headers()
         self.end_headers()
@@ -103,8 +96,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
-        content_length = int(self.headers.get('Content-Length', 0))
-        
         if self.path == '/capture_for_ai':
             try:
                 logging.info('Starting image capture for AI analysis')
@@ -138,7 +129,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 
             except Exception as e:
                 logging.error(f"Capture error: {str(e)}")
-                logging.error(traceback.format_exc())
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self._send_cors_headers()
@@ -148,45 +138,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     'message': str(e)
                 }
                 self.wfile.write(json.dumps(error_response).encode('utf-8'))
-        
-        elif self.path == '/toggle_network':
-            try:
-                logging.info('Starting network toggle')
-                
-                # Execute network switch script
-                result = subprocess.run(
-                    'sudo /home/siyi/wifi_toggle.sh client',
-                    shell=True,
-                    check=True,
-                    capture_output=True,
-                    text=True
-                )
-                
-                logging.info(f'Network toggle output: {result.stdout}')
-                
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self._send_cors_headers()
-                self.end_headers()
-                
-                response_data = {
-                    'status': 'success',
-                    'message': 'Network switched to client mode'
-                }
-                self.wfile.write(json.dumps(response_data).encode('utf-8'))
-                
-            except Exception as e:
-                logging.error(f"Network toggle error: {str(e)}")
-                self.send_response(500)
-                self.send_header('Content-Type', 'application/json')
-                self._send_cors_headers()
-                self.end_headers()
-                error_response = {
-                    'status': 'error',
-                    'message': str(e)
-                }
-                self.wfile.write(json.dumps(error_response).encode('utf-8'))
-        
         else:
             self.send_error(404)
             self.end_headers()
