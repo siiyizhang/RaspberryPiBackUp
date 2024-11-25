@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Microscope Stream</title>
     <style>
-        /* Force full height on iOS */
-        html {
-            height: -webkit-fill-available;
+        :root {
+            --vh: 1vh;
         }
 
         body {
@@ -16,10 +15,6 @@
             background: #000;
             color: white;
             font-family: 'Avenir', sans-serif;
-            /* Use the full available height */
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
-            /* Prevent bounce/elastic scroll on iOS */
             overflow: hidden;
             position: fixed;
             width: 100%;
@@ -27,8 +22,8 @@
 
         .container {
             position: relative;
-            height: 100vh;
-            height: -webkit-fill-available;
+            /* Use CSS custom property for height */
+            height: calc(var(--vh, 1vh) * 100);
             width: 100vw;
             overflow: hidden;
         }
@@ -55,7 +50,6 @@
             text-align: center;
             z-index: 10;
             pointer-events: none;
-            /* Account for notches and home indicators */
             padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
@@ -154,14 +148,22 @@
             const cancelButton = document.getElementById('cancelButton');
             const streamImage = document.getElementById('streamImage');
 
-            // Handle iOS Safari's full height
-            const resizeHeight = () => {
-                document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-            };
-            
-            window.addEventListener('resize', resizeHeight);
-            window.addEventListener('orientationchange', resizeHeight);
-            resizeHeight();
+            // Handle mobile browser viewport height
+            function setVH() {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+            }
+
+            // Set initial height
+            setVH();
+
+            // Update height on resize and orientation change
+            ['resize', 'orientationchange'].forEach(event => {
+                window.addEventListener(event, () => {
+                    // Add slight delay to ensure new height is calculated after toolbar shows/hides
+                    setTimeout(setVH, 100);
+                });
+            });
 
             async function captureFrame() {
                 const response = await fetch('/capture_for_ai', { method: 'POST' });
