@@ -2,28 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Microscope Stream</title>
     <style>
-        :root {
-            --vh: 1vh;
-        }
-
         body {
             margin: 0;
             padding: 0;
-            background: #000;
-            color: white;
             font-family: 'Avenir', sans-serif;
             overflow: hidden;
-            position: fixed;
-            width: 100%;
         }
 
         .container {
             position: relative;
-            /* Use CSS custom property for height */
-            height: calc(var(--vh, 1vh) * 100);
+            height: 100vh;
             width: 100vw;
             overflow: hidden;
         }
@@ -31,7 +22,8 @@
         .stream-container {
             width: 100%;
             height: 100%;
-            position: absolute;
+            position: relative;
+            position: relative;
             top: 0;
             left: 0;
         }
@@ -44,19 +36,28 @@
 
         .controls {
             position: absolute;
-            bottom: max(20px, env(safe-area-inset-bottom));
+            bottom: 20px;
             left: 0;
             right: 0;
             text-align: center;
             z-index: 10;
             pointer-events: none;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .control-icon {
+            height: 100px;
+            width: 100px;
+            pointer-events: auto;
         }
 
         .btn {
-            min-height: 44px;
+            min-height: 40px;
             min-width: 44px;
-            padding: 12px 24px;
+            padding: 10px 24px;
             background: #2dbab8;
             color: white;
             border: none;
@@ -65,18 +66,16 @@
             font-size: 16px;
             pointer-events: auto;
             transition: background 0.2s ease;
-            font-family: 'Avenir', sans-serif;
         }
-
         .btn:hover {
             background: #259e9d;
         }
-
         .btn:disabled {
             background: #238482;
             cursor: not-allowed;
         }
 
+        /* Confirmation popup styles */
         .overlay {
             display: none;
             position: fixed;
@@ -101,7 +100,6 @@
             text-align: center;
             max-width: 90%;
             width: 350px;
-            font-family: 'Avenir', sans-serif;
         }
 
         .popup-buttons {
@@ -124,17 +122,19 @@
         </div>
         <div class="controls">
             <button class="btn" id="askAI">Ask Eureka Elf</button>
+            <img src="figures/Eureka Elf.png" alt="Icon" class="control-icon">
         </div>
     </div>
 
+    <!-- Confirmation popup -->
     <div class="overlay" id="overlay"></div>
     <div class="popup" id="confirmationPopup">
         <div class="popup-message">
-            Please make sure you are connected to the internet before continuing.
+            Dear explorer, Have you saved the image and connected your device to the internet?
         </div>
         <div class="popup-buttons">
             <button class="btn" id="cancelButton">Cancel</button>
-            <button class="btn" id="continueButton">Continue</button>
+            <button class="btn" id="continueButton">Yes</button>
         </div>
     </div>
 
@@ -147,23 +147,6 @@
             const continueButton = document.getElementById('continueButton');
             const cancelButton = document.getElementById('cancelButton');
             const streamImage = document.getElementById('streamImage');
-
-            // Handle mobile browser viewport height
-            function setVH() {
-                const vh = window.innerHeight * 0.01;
-                document.documentElement.style.setProperty('--vh', `${vh}px`);
-            }
-
-            // Set initial height
-            setVH();
-
-            // Update height on resize and orientation change
-            ['resize', 'orientationchange'].forEach(event => {
-                window.addEventListener(event, () => {
-                    // Add slight delay to ensure new height is calculated after toolbar shows/hides
-                    setTimeout(setVH, 100);
-                });
-            });
 
             async function captureFrame() {
                 const response = await fetch('/capture_for_ai', { method: 'POST' });
@@ -187,8 +170,13 @@
                     askAIButton.disabled = true;
                     askAIButton.textContent = 'Capturing...';
                     
+                    // Capture image
                     const imageData = await captureFrame();
+                    
+                    // Display captured image
                     streamImage.src = `data:image/jpeg;base64,${imageData}`;
+                    
+                    // Show confirmation popup
                     showPopup();
                     
                 } catch (error) {
