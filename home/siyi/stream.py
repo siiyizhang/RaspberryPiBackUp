@@ -91,9 +91,9 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 logging.warning(
                     'Removed streaming client %s: %s',
                     self.client_address, str(e))
-        elif self.path.startswith('figures/'):
+        elif self.path.startswith('/figures/'):
             try:
-                file_path = '/var/www/html/' + self.path
+                file_path = '/var/www/html' + self.path
                 with open(file_path, 'rb') as f:
                     self.send_response(200)
                     if self.path.endswith('.png'):
