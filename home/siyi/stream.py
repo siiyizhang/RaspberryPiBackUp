@@ -91,6 +91,20 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 logging.warning(
                     'Removed streaming client %s: %s',
                     self.client_address, str(e))
+        elif self.path.startswith('figures/'):
+            try:
+                file_path = '/var/www/html' + self.path
+                with open(file_path, 'rb') as f:
+                    self.send_response(200)
+                    if self.path.endswith('.png'):
+                        self.send_header('Content-Type', 'image/png')
+                    content = f.read()
+                    self.send_header('Content-Length', len(content))
+                    self.end_headers()
+                    self.wfile.write(content)
+            except FileNotFoundError:
+                self.send_error(404)
+                self.end_headers()
         else:
             self.send_error(404)
             self.end_headers()
