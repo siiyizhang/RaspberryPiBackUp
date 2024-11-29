@@ -11,13 +11,12 @@ import json
 from datetime import datetime
 import base64
 
-# Configure logging
+# Configure logging with reduced output
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.WARNING,  # Changed from DEBUG to WARNING
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('/var/log/microscope.log')
+        logging.FileHandler('/var/log/microscope.log')  # Removed StreamHandler to reduce overhead
     ]
 )
 
@@ -26,15 +25,15 @@ MEDIA_DIR = '/var/www/html/media'
 os.makedirs(MEDIA_DIR, exist_ok=True)
 
 def read_html_file(filename):
-    with open(filename, 'r') as file:
-        return file.read()
+    try:
+        with open(filename, 'r') as file:
+            return file.read()
+    except FileNotFoundError:
+        logging.error(f"HTML file not found: {filename}")
+        raise
 
 # Read HTML files
-try:
-    MAIN_PAGE = read_html_file('/var/www/html/index.html')
-except FileNotFoundError as e:
-    logging.error(f"HTML file not found: {e}")
-    raise
+MAIN_PAGE = read_html_file('/var/www/html/index.html')
 
 class StreamingOutput(io.BufferedIOBase):
     def __init__(self):
@@ -47,6 +46,10 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
+    # Disable logging of every request
+    def log_message(self, format, *args):
+        pass
+
     def _send_cors_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
@@ -87,10 +90,8 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(frame)
                     self.wfile.write(b'\r\n')
-            except Exception as e:
-                logging.warning(
-                    'Removed streaming client %s: %s',
-                    self.client_address, str(e))
+            except Exception:
+                pass  # Silently handle client disconnections
         elif self.path.startswith('/figures/'):
             try:
                 file_path = '/var/www/html' + self.path
@@ -112,22 +113,17 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/capture_for_ai':
             try:
-                logging.info('Starting image capture for AI analysis')
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 filename = f'ai_capture_{timestamp}.jpg'
                 filepath = os.path.join(MEDIA_DIR, filename)
                 
-                # Capture high-resolution image
                 picam2.capture_file(filepath)
                 
-                # Convert to base64
                 with open(filepath, 'rb') as f:
                     img_data = base64.b64encode(f.read()).decode('utf-8')
                     
-                # Clean up temporary file
                 os.remove(filepath)
                 
-                # Send response
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self._send_cors_headers()
@@ -139,7 +135,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     'timestamp': datetime.now().isoformat()
                 }
                 self.wfile.write(json.dumps(response_data).encode('utf-8'))
-                logging.info('Image capture completed successfully')
                 
             except Exception as e:
                 logging.error(f"Capture error: {str(e)}")
@@ -169,8 +164,8 @@ picam2.start_recording(JpegEncoder(), FileOutput(output))
 try:
     address = ('', 8000)
     server = StreamingServer(address, StreamingHandler)
-    logging.info('Starting streaming server on port 8000')
+    logging.warning('Starting streaming server on port 8000')  # Changed from info to warning
     server.serve_forever()
 finally:
-    logging.info('Stopping camera and server')
+    logging.warning('Stopping camera and server')  # Changed from info to warning
     picam2.stop_recording()
